@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>PepsiCo Route Pilot</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">Kroger Grand Blanc</p>
+          <h1>PepsiCo Beverage Route</h1>
+        </div>
+        <button class="icon-button" id="resetButton" aria-label="Reset route" title="Reset route">
+          <span aria-hidden="true">R</span>
+        </button>
+      </header>
+
+      <main>
+        <section class="status-strip" aria-label="Route status">
+          <div>
+            <span class="label">Start</span>
+            <strong>5:00 AM</strong>
+          </div>
+          <div>
+            <span class="label">Mode</span>
+            <strong id="routeMode">Pallet allowed</strong>
+          </div>
+          <div>
+            <span class="label">Remaining</span>
+            <strong id="remainingTime">2h 05m</strong>
+          </div>
+        </section>
+
+        <section class="mode-panel" aria-label="Route mode">
+          <div class="segmented" role="group" aria-label="Route mode">
+            <button class="segment active" data-mode="pallet">Pallet</button>
+            <button class="segment" data-mode="uboat">U-boat</button>
+          </div>
+          <p id="modeNote">Bulk pull early, work front to back, finish near receiving.</p>
+        </section>
+
+        <section class="map-panel" aria-label="Store route map">
+          <div class="map-head">
+            <div>
+              <h2>Interactive Map</h2>
+              <p>Tap a stop to focus the route.</p>
+            </div>
+            <span id="completeCount">0 / 6</span>
+          </div>
+
+          <div class="store-map" id="storeMap">
+            <div class="zone front">Front doors / registers</div>
+            <div class="aisle aisle-2">Aisle 2</div>
+            <div class="aisle aisle-3">Aisle 3</div>
+            <div class="aisle aisle-5">Aisle 5</div>
+            <div class="zone receiving">Back wall receiving</div>
+            <svg class="route-line" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+              <polyline id="routePath" points=""></polyline>
+            </svg>
+          </div>
+        </section>
+
+        <section class="current-stop" aria-live="polite">
+          <div class="stop-title-row">
+            <div>
+              <p class="eyebrow" id="stopMeta">Stop 1 of 6</p>
+              <h2 id="stopName">Front register coolers</h2>
+            </div>
+            <span class="time-pill" id="stopTime">20 min</span>
+          </div>
+          <p id="stopDescription">Highest-profit singles first. Check all register doors before moving deeper into the store.</p>
+          <div class="chips" id="productChips"></div>
+          <div class="action-row">
+            <button class="secondary-button" id="verifyButton">Verify</button>
+            <button class="primary-button" id="completeButton">Mark complete</button>
+          </div>
+        </section>
+
+        <section class="route-list" aria-label="Route order">
+          <div class="section-head">
+            <h2>Default Route</h2>
+            <span>Manual order</span>
+          </div>
+          <ol id="routeList"></ol>
+        </section>
+      </main>
+
+      <nav class="bottom-nav" aria-label="Primary">
+        <button class="nav-item active" data-view="route">Route</button>
+        <button class="nav-item" data-view="map">Map</button>
+        <button class="nav-item" data-view="verify">Verify</button>
+      </nav>
+    </div>
+
+    <dialog id="verifyDialog">
+      <form method="dialog" class="verify-form">
+        <div class="dialog-head">
+          <div>
+            <p class="eyebrow">Store verification</p>
+            <h2 id="verifyTitle">Front register coolers</h2>
+          </div>
+          <button class="icon-button" value="cancel" aria-label="Close" title="Close">X</button>
+        </div>
+
+        <label>
+          Location type
+          <select id="locationType">
+            <option>Register cooler</option>
+            <option>Cold vault</option>
+            <option>Main aisle</option>
+            <option>Endcap</option>
+            <option>Lobby display</option>
+            <option>Seasonal display</option>
+            <option>Backstock</option>
+            <option>Other</option>
+          </select>
+        </label>
+
+        <div class="field-grid">
+          <label>
+            Aisle
+            <input id="aisleInput" placeholder="Front">
+          </label>
+          <label>
+            Section
+            <select id="sectionInput">
+              <option>Front</option>
+              <option>Middle</option>
+              <option>Back</option>
+              <option>Left</option>
+              <option>Right</option>
+            </select>
+          </label>
+        </div>
+
+        <label>
+          Priority
+          <select id="priorityInput">
+            <option>High</option>
+            <option>Medium</option>
+            <option>Low</option>
+          </select>
+        </label>
+
+        <label>
+          Notes
+          <textarea id="notesInput" rows="3" placeholder="Cooler door number, display name, manager instruction"></textarea>
+        </label>
+
+        <menu>
+          <button class="secondary-button" value="cancel">Cancel</button>
+          <button class="primary-button" id="saveVerifyButton" value="default">Save verification</button>
+        </menu>
+      </form>
+    </dialog>
+
+    <script src="app.js"></script>
+  </body>
+</html>
