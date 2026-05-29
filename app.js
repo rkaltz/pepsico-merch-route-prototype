@@ -42,6 +42,27 @@ const route = [
     ]
   },
   {
+    name: "Deli chicken rack",
+    minutes: 8,
+    type: "Secondary display",
+    aisle: "Deli",
+    section: "Rotisserie chicken",
+    priority: "High",
+    verified: false,
+    x: 18,
+    y: 38,
+    description:
+      "Do not miss this. Go to deli, find rotisserie chicken, then locate the 7.5 oz mini-can promo rack.",
+    products: ["7.5 oz mini cans", "6 packs", "Chicken promo"],
+    sequence: [
+      "Walk to deli and find the rotisserie chicken area.",
+      "Look around the chicken rack or warmer; exact placement varies by store.",
+      "Fill 7.5 oz 6-pack mini cans tied to the chicken promo.",
+      "Face the display and remove damaged or loose packs.",
+      "Record the exact placement for this store after verification."
+    ]
+  },
+  {
     name: "Aisle 2 beverages",
     minutes: 15,
     type: "Main aisle",
