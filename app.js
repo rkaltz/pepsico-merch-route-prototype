@@ -151,6 +151,7 @@ const route = [
 let activeIndex = 0;
 let mode = "pallet";
 const completed = new Set();
+const savedDisplays = JSON.parse(localStorage.getItem("soldDisplays") || "[]");
 
 const routeList = document.querySelector("#routeList");
 const storeMap = document.querySelector("#storeMap");
@@ -175,6 +176,46 @@ const notesInput = document.querySelector("#notesInput");
 const saveVerifyButton = document.querySelector("#saveVerifyButton");
 const routeMode = document.querySelector("#routeMode");
 const modeNote = document.querySelector("#modeNote");
+const soldDisplayList = document.querySelector("#soldDisplayList");
+const displayDialog = document.querySelector("#displayDialog");
+const addDisplayButton = document.querySelector("#addDisplayButton");
+const saveDisplayButton = document.querySelector("#saveDisplayButton");
+const displayNameInput = document.querySelector("#displayNameInput");
+const displayDepartmentInput = document.querySelector("#displayDepartmentInput");
+const displayPlacementInput = document.querySelector("#displayPlacementInput");
+const displayProductInput = document.querySelector("#displayProductInput");
+const displayPriorityInput = document.querySelector("#displayPriorityInput");
+const displayNotesInput = document.querySelector("#displayNotesInput");
+
+function makeDisplayStop(display) {
+  return {
+    name: display.name,
+    minutes: 8,
+    type: "Rep-sold display",
+    aisle: display.department,
+    section: display.placement,
+    priority: display.priority,
+    verified: false,
+    repAdded: true,
+    x: 34,
+    y: 35,
+    description:
+      "Rep-sold display. Check this store-specific display before finishing the standard route.",
+    products: [display.product],
+    notes: display.notes,
+    sequence: [
+      `Go to ${display.department} and find ${display.placement}.`,
+      `Fill and face ${display.product}.`,
+      "Confirm the display is still approved and active.",
+      "Record any placement change for the route owner.",
+      "If the display is gone, leave a note before marking complete."
+    ]
+  };
+}
+
+savedDisplays.forEach((display) => {
+  route.splice(route.length - 1, 0, makeDisplayStop(display));
+});
 
 function formatMinutes(total) {
   if (total < 60) return `${total}m`;
@@ -238,6 +279,21 @@ function render() {
       `;
     })
     .join("");
+
+  const soldDisplays = route.filter((stop) => stop.repAdded);
+  soldDisplayList.innerHTML = soldDisplays.length
+    ? soldDisplays
+        .map(
+          (display) => `
+            <div class="display-item">
+              <strong>${display.name}</strong>
+              <span>${display.aisle} / ${display.section} / ${display.products.join(", ")}</span>
+              <span>${display.notes || "Rep-added display. Verify during this store visit."}</span>
+            </div>
+          `
+        )
+        .join("")
+    : `<div class="display-item"><strong>No extra sold displays yet</strong><span>Route owner can add lobby, deli, seasonal, or manager-approved displays here.</span></div>`;
 }
 
 function setActive(index) {
@@ -307,6 +363,36 @@ saveVerifyButton.addEventListener("click", () => {
   current.priority = priorityInput.value;
   current.notes = notesInput.value;
   current.verified = true;
+  render();
+});
+
+addDisplayButton.addEventListener("click", () => {
+  displayNameInput.value = "";
+  displayDepartmentInput.value = "";
+  displayPlacementInput.value = "";
+  displayProductInput.value = "";
+  displayPriorityInput.value = "High";
+  displayNotesInput.value = "";
+  displayDialog.showModal();
+});
+
+saveDisplayButton.addEventListener("click", () => {
+  const department = displayDepartmentInput.value || "Store display";
+  const placement = displayPlacementInput.value || "Placement needs verification";
+  const product = displayProductInput.value || "PepsiCo beverage display";
+  const name = displayNameInput.value || `${department} display`;
+  const display = {
+    name,
+    department,
+    placement,
+    product,
+    priority: displayPriorityInput.value,
+    notes: displayNotesInput.value
+  };
+
+  savedDisplays.push(display);
+  localStorage.setItem("soldDisplays", JSON.stringify(savedDisplays));
+  route.splice(route.length - 1, 0, makeDisplayStop(display));
   render();
 });
 

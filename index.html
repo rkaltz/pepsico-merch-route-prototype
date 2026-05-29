@@ -50,6 +50,18 @@
           <p>Prioritize front coolers, ad displays, Aisle 5 fast movers, Gatorade, and energy. Skip full aisle detail unless the store is visibly empty.</p>
         </section>
 
+        <section class="sold-displays" aria-label="Sold displays">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">Rep-added</p>
+              <h2>Sold Displays</h2>
+            </div>
+            <button class="secondary-button compact-button" id="addDisplayButton">Add</button>
+          </div>
+          <p>Displays the route owner sold into this store. Fill-ins should check these even when they are not on the standard aisle map.</p>
+          <div id="soldDisplayList" class="display-list"></div>
+        </section>
+
         <section class="map-panel" aria-label="Store route map">
           <div class="map-head">
             <div>
@@ -176,6 +188,58 @@
         <menu>
           <button class="secondary-button" value="cancel">Cancel</button>
           <button class="primary-button" id="saveVerifyButton" value="default">Save verification</button>
+        </menu>
+      </form>
+    </dialog>
+
+    <dialog id="displayDialog">
+      <form method="dialog" class="verify-form">
+        <div class="dialog-head">
+          <div>
+            <p class="eyebrow">Rep-added display</p>
+            <h2>Add sold display</h2>
+          </div>
+          <button class="icon-button" value="cancel" aria-label="Close" title="Close">X</button>
+        </div>
+
+        <label>
+          Display name
+          <input id="displayNameInput" placeholder="Deli mini-can stack">
+        </label>
+
+        <div class="field-grid">
+          <label>
+            Department
+            <input id="displayDepartmentInput" placeholder="Deli">
+          </label>
+          <label>
+            Placement
+            <input id="displayPlacementInput" placeholder="Near chicken rack">
+          </label>
+        </div>
+
+        <label>
+          Product group
+          <input id="displayProductInput" placeholder="7.5 oz mini cans">
+        </label>
+
+        <label>
+          Priority
+          <select id="displayPriorityInput">
+            <option>High</option>
+            <option>Medium</option>
+            <option>Low</option>
+          </select>
+        </label>
+
+        <label>
+          Notes
+          <textarea id="displayNotesInput" rows="3" placeholder="Manager approved, ad week, how to find it"></textarea>
+        </label>
+
+        <menu>
+          <button class="secondary-button" value="cancel">Cancel</button>
+          <button class="primary-button" id="saveDisplayButton" value="default">Save display</button>
         </menu>
       </form>
     </dialog>
