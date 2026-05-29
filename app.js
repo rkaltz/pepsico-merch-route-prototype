@@ -10,7 +10,7 @@ const route = [
     x: 48,
     y: 13,
     description:
-      "Highest-profit singles first. Check all register doors before moving deeper into the store.",
+      "Start here. Work the full checkout cooler line from one end to the other before leaving the front.",
     products: ["Pepsi singles", "Dew singles", "Aquafina", "Gatorade", "Energy"],
     sequence: [
       "Face and rotate each cooler door before opening new cases.",
@@ -31,7 +31,7 @@ const route = [
     x: 21,
     y: 24,
     description:
-      "Work sale stacks, lobby displays, seasonal pallets, and any front endcap beverage features.",
+      "Still up front. Work lobby, seasonal, and ad displays now so you do not walk back later.",
     products: ["12 packs", "2 liters", "Gatorade", "Poppi check"],
     sequence: [
       "Build or tighten any active ad display first.",
@@ -52,7 +52,7 @@ const route = [
     x: 26,
     y: 48,
     description:
-      "Water, tea, coffee, and hydration sets. Confirm newer functional brands while passing.",
+      "First aisle stop after the front. Work water, hydration, tea, and coffee before moving to energy.",
     products: ["Aquafina", "Propel", "Pure Leaf", "Starbucks RTD"],
     sequence: [
       "Stock bulk water first because it is the heaviest and clears cart space.",
@@ -73,7 +73,7 @@ const route = [
     x: 48,
     y: 52,
     description:
-      "Energy set. Sales rep verifies Celsius and Alani Nu placement store by store.",
+      "Second aisle stop. Work the energy set, then continue toward the main soda aisle.",
     products: ["Celsius", "Alani Nu", "Rockstar"],
     sequence: [
       "Verify Celsius and Alani Nu location before opening cases.",
@@ -94,7 +94,7 @@ const route = [
     x: 72,
     y: 62,
     description:
-      "Primary soda and multipack work. Finish heavy cases before the store gets busy.",
+      "Main heavy-work stop. Clear bulky packs first, then finish 2 liters and smaller formats.",
     products: ["Pepsi family", "Mountain Dew", "Starry", "Mug", "Crush", "Gatorade packs"],
     sequence: [
       "Start with cubes, 24 packs, and floor-stack items to clear pallet bulk.",
@@ -115,7 +115,7 @@ const route = [
     x: 53,
     y: 87,
     description:
-      "Finish near receiving. Stage overstock, handle cardboard, credits, and final backstock notes.",
+      "End here near the back wall. Handle overstock, credits, cardboard, and notes without crossing the store again.",
     products: ["Overstock", "Credits", "Cardboard", "Pallet wrap"],
     sequence: [
       "Separate sellable overstock from credits and damages.",
