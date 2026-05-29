@@ -17,7 +17,7 @@ const route = [
       "Stock 20 oz Pepsi family and Mountain Dew first.",
       "Fill water and sports drink singles next.",
       "Fill energy, tea, coffee, and functional singles last.",
-      "Pull damaged, expired, or wrong-location singles before leaving."
+      "Core hit: leave this stop full before doing anything else."
     ]
   },
   {
@@ -38,7 +38,7 @@ const route = [
       "Work cubes and 24 packs before loose shelf packs.",
       "Fill 12 packs and mini cans by flavor block.",
       "Fill 2 liters only after bulky display cases are cleared.",
-      "Check Poppi or functional soda displays while still near the front."
+      "Core hit: service sale displays even if the full aisle is skipped."
     ]
   },
   {
@@ -59,7 +59,7 @@ const route = [
       "Fill Propel and hydration multipacks next.",
       "Fill tea and coffee multipacks or shelf sets.",
       "Top off singles or small packs last.",
-      "Mark any missing new-brand location for sales rep verification."
+      "Core hit: only fill obvious holes unless this is a delivery visit."
     ]
   },
   {
@@ -80,7 +80,7 @@ const route = [
       "Stock fastest movers and sale flavors first.",
       "Fill Rockstar and other confirmed Pepsi-route energy slots.",
       "Face cans by brand block after stocking.",
-      "Record new or changed placement before leaving the aisle."
+      "Core hit: fill visible energy holes and record changed placements."
     ]
   },
   {
@@ -101,7 +101,7 @@ const route = [
       "Stock 12 packs and mini cans by brand block: Pepsi, Dew, then flavors.",
       "Stock 2 liters next, working bottom shelves before upper shelves.",
       "Fill 6 packs, 8 packs, and small-format items after the heavy cases.",
-      "Face the set, rotate older product forward, then scan for missed holes."
+      "Core hit: focus Pepsi, Dew, ad items, Gatorade, and major visible holes."
     ]
   },
   {
@@ -122,7 +122,7 @@ const route = [
       "Label or stage backstock by next route stop or pack type.",
       "Break down cardboard and wrap after all sellable product is handled.",
       "Log location changes and unverified brands.",
-      "Final walk: front coolers, promo, Aisle 2, Aisle 3, Aisle 5."
+      "Core hit: leave a note for the route owner if anything was skipped."
     ]
   }
 ];
