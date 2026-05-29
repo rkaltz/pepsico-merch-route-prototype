@@ -11,7 +11,14 @@ const route = [
     y: 13,
     description:
       "Highest-profit singles first. Check all register doors before moving deeper into the store.",
-    products: ["Pepsi singles", "Dew singles", "Aquafina", "Gatorade", "Energy"]
+    products: ["Pepsi singles", "Dew singles", "Aquafina", "Gatorade", "Energy"],
+    sequence: [
+      "Face and rotate each cooler door before opening new cases.",
+      "Stock 20 oz Pepsi family and Mountain Dew first.",
+      "Fill water and sports drink singles next.",
+      "Fill energy, tea, coffee, and functional singles last.",
+      "Pull damaged, expired, or wrong-location singles before leaving."
+    ]
   },
   {
     name: "Front promo / lobby",
@@ -25,7 +32,14 @@ const route = [
     y: 24,
     description:
       "Work sale stacks, lobby displays, seasonal pallets, and any front endcap beverage features.",
-    products: ["12 packs", "2 liters", "Gatorade", "Poppi check"]
+    products: ["12 packs", "2 liters", "Gatorade", "Poppi check"],
+    sequence: [
+      "Build or tighten any active ad display first.",
+      "Work cubes and 24 packs before loose shelf packs.",
+      "Fill 12 packs and mini cans by flavor block.",
+      "Fill 2 liters only after bulky display cases are cleared.",
+      "Check Poppi or functional soda displays while still near the front."
+    ]
   },
   {
     name: "Aisle 2 beverages",
@@ -39,7 +53,14 @@ const route = [
     y: 48,
     description:
       "Water, tea, coffee, and hydration sets. Confirm newer functional brands while passing.",
-    products: ["Aquafina", "Propel", "Pure Leaf", "Starbucks RTD"]
+    products: ["Aquafina", "Propel", "Pure Leaf", "Starbucks RTD"],
+    sequence: [
+      "Stock bulk water first because it is the heaviest and clears cart space.",
+      "Fill Propel and hydration multipacks next.",
+      "Fill tea and coffee multipacks or shelf sets.",
+      "Top off singles or small packs last.",
+      "Mark any missing new-brand location for sales rep verification."
+    ]
   },
   {
     name: "Aisle 3 energy",
@@ -53,7 +74,14 @@ const route = [
     y: 52,
     description:
       "Energy set. Sales rep verifies Celsius and Alani Nu placement store by store.",
-    products: ["Celsius", "Alani Nu", "Rockstar"]
+    products: ["Celsius", "Alani Nu", "Rockstar"],
+    sequence: [
+      "Verify Celsius and Alani Nu location before opening cases.",
+      "Stock fastest movers and sale flavors first.",
+      "Fill Rockstar and other confirmed Pepsi-route energy slots.",
+      "Face cans by brand block after stocking.",
+      "Record new or changed placement before leaving the aisle."
+    ]
   },
   {
     name: "Aisle 5 main soda",
@@ -67,7 +95,14 @@ const route = [
     y: 62,
     description:
       "Primary soda and multipack work. Finish heavy cases before the store gets busy.",
-    products: ["Pepsi family", "Mountain Dew", "Starry", "Mug", "Crush", "Gatorade packs"]
+    products: ["Pepsi family", "Mountain Dew", "Starry", "Mug", "Crush", "Gatorade packs"],
+    sequence: [
+      "Start with cubes, 24 packs, and floor-stack items to clear pallet bulk.",
+      "Stock 12 packs and mini cans by brand block: Pepsi, Dew, then flavors.",
+      "Stock 2 liters next, working bottom shelves before upper shelves.",
+      "Fill 6 packs, 8 packs, and small-format items after the heavy cases.",
+      "Face the set, rotate older product forward, then scan for missed holes."
+    ]
   },
   {
     name: "Backroom cleanup",
@@ -81,7 +116,14 @@ const route = [
     y: 87,
     description:
       "Finish near receiving. Stage overstock, handle cardboard, credits, and final backstock notes.",
-    products: ["Overstock", "Credits", "Cardboard", "Pallet wrap"]
+    products: ["Overstock", "Credits", "Cardboard", "Pallet wrap"],
+    sequence: [
+      "Separate sellable overstock from credits and damages.",
+      "Label or stage backstock by next route stop or pack type.",
+      "Break down cardboard and wrap after all sellable product is handled.",
+      "Log location changes and unverified brands.",
+      "Final walk: front coolers, promo, Aisle 2, Aisle 3, Aisle 5."
+    ]
   }
 ];
 
@@ -93,6 +135,7 @@ const routeList = document.querySelector("#routeList");
 const storeMap = document.querySelector("#storeMap");
 const routePath = document.querySelector("#routePath");
 const productChips = document.querySelector("#productChips");
+const sequenceList = document.querySelector("#sequenceList");
 const stopMeta = document.querySelector("#stopMeta");
 const stopName = document.querySelector("#stopName");
 const stopTime = document.querySelector("#stopTime");
@@ -128,6 +171,7 @@ function render() {
   productChips.innerHTML = current.products
     .map((product) => `<span class="chip">${product}</span>`)
     .join("");
+  sequenceList.innerHTML = current.sequence.map((item) => `<li>${item}</li>`).join("");
 
   completeButton.textContent = completed.has(activeIndex) ? "Reopen stop" : "Mark complete";
   const remaining = route.reduce((sum, stop, index) => {
@@ -168,6 +212,7 @@ function render() {
             </div>
           </div>
           <span class="verification-status ${stop.verified ? "confirmed" : ""}">${status}</span>
+          <span class="micro-sequence">First: ${stop.sequence[0]}</span>
         </li>
       `;
     })

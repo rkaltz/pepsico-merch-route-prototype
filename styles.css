@@ -318,6 +318,32 @@ main {
   background: #f8fafc;
 }
 
+.sequence-panel {
+  margin-top: 14px;
+  border-top: 1px solid var(--line);
+  padding-top: 12px;
+}
+
+.sequence-panel h3 {
+  margin: 0 0 8px;
+  font-size: 13px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.sequence-panel ol {
+  margin: 0;
+  padding-left: 22px;
+  display: grid;
+  gap: 7px;
+}
+
+.sequence-panel li {
+  color: #24364d;
+  font-size: 14px;
+  line-height: 1.35;
+}
+
 .action-row,
 menu {
   display: grid;
@@ -387,6 +413,12 @@ menu {
   color: var(--muted);
   font-size: 13px;
   line-height: 1.35;
+}
+
+.route-card .micro-sequence {
+  color: #334155;
+  font-size: 12px;
+  font-weight: 700;
 }
 
 .order-tools {
