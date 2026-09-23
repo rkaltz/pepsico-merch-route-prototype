@@ -73,6 +73,9 @@ function loadPrototype() {
   const localStorageData = {};
   const context = {
     console,
+    navigator: {
+      vibrate() {}
+    },
     URL,
     URLSearchParams,
     window: {
@@ -103,7 +106,9 @@ function loadPrototype() {
     .replace("const orderItemOverrides =", "var orderItemOverrides =")
     .replace("const orderSearchInput =", "var orderSearchInput =")
     .replace("const catalogSearchInput =", "var catalogSearchInput =")
-    .replace("const scanInput =", "var scanInput =");
+    .replace("const scanInput =", "var scanInput =")
+    .replace("let activeScannedProductSku =", "var activeScannedProductSku =")
+    .replace("let activeViewTarget =", "var activeViewTarget =");
   vm.runInContext(appCode, context);
   return context;
 }
@@ -229,6 +234,30 @@ function testScanOrderMatch(context) {
   context.activeScannedProductSku = "";
 }
 
+function testDecodedBarcodePipeline(context) {
+  const walmart = context.stores[0];
+  context.setActiveStore(0);
+
+  assert(context.barcodeCheckDigitIsValid("012000002946"), "Physical Pepsi UPC should pass check-digit validation");
+  assert(context.barcodeCheckDigitIsValid("0012000002946"), "EAN-13 representation of Pepsi UPC should pass check-digit validation");
+  assert(context.normalizeDecodedBarcode("012000002946", "upc_a") === "012000002946", "UPC-A should remain the 12-digit UPC");
+  assert(context.normalizeDecodedBarcode("0012000002946", "ean_13") === "012000002946", "EAN-13 leading-zero UPC-A should normalize to 12 digits");
+
+  const handled = context.handleBarcode("0012000002946", "camera");
+  const scannedProduct = context.findProduct(context.scanInput.value);
+  const orderLine = walmart.order.find((item) => item.sku === "Pepsi 20oz");
+
+  assert(handled, "handleBarcode should accept normalized camera UPC");
+  assert(context.scanInput.value === "012000002946", "handleBarcode should write normalized UPC into scan input");
+  assert(scannedProduct?.name === "Pepsi 20oz Bottle", "Decoded Pepsi UPC should resolve to Pepsi 20oz Bottle");
+  assert(context.activeScannedProductSku === "PEP-PEPSI-20OZ", "Decoded Pepsi UPC should set active scanned product");
+  assert(context.orderItemMatchesScannedProduct(orderLine, scannedProduct.sku), "Decoded Pepsi UPC should match Walmart Pepsi 20oz order line");
+
+  context.scanInput.value = "";
+  context.activeScannedProductSku = "";
+  context.renderScanResult(null);
+}
+
 function testSmartOrder(context) {
   const walmart = context.stores[0];
   const approvedBefore = walmart.order.filter((item) => item.approved).length;
@@ -275,6 +304,7 @@ function run() {
   testInventory(context);
   testOrderingMath(context);
   testScanOrderMatch(context);
+  testDecodedBarcodePipeline(context);
   testSmartOrder(context);
   testCatalogIsolation(context);
   testStoreSwitchClearsFilters(context);
