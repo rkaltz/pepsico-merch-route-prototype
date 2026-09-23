@@ -3,247 +3,221 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>PepsiCo Route Pilot</title>
+    <title>Beverage Order Co-Pilot</title>
     <link rel="stylesheet" href="styles.css">
   </head>
   <body>
     <div class="app-shell">
       <header class="topbar">
         <div>
-          <p class="eyebrow">Kroger Grand Blanc</p>
-          <h1>PepsiCo Beverage Route</h1>
+          <p class="eyebrow">PepsiCo Beverages / Zebra route</p>
+          <h1>Zebra Beverage Co-Pilot</h1>
         </div>
-        <button class="icon-button" id="resetButton" aria-label="Reset route" title="Reset route">
+        <button class="icon-button" id="resetButton" aria-label="Reset demo" title="Reset demo">
           <span aria-hidden="true">R</span>
         </button>
       </header>
 
       <main>
-        <section class="status-strip" aria-label="Route status">
+        <section class="route-switcher" aria-label="Route store selector">
+          <label>
+            Route stop
+            <select id="routeStoreSelect"></select>
+          </label>
           <div>
-            <span class="label">Start</span>
-            <strong>5:00 AM</strong>
-          </div>
-          <div>
-            <span class="label">Mode</span>
-            <strong id="routeMode">Pallet allowed</strong>
-          </div>
-          <div>
-            <span class="label">Remaining</span>
-            <strong id="remainingTime">2h 05m</strong>
+            <span id="routeStoreRisk">High risk</span>
+            <b id="routeStoreTime">6:05 AM</b>
           </div>
         </section>
 
-        <section class="mode-panel" aria-label="Route mode">
-          <div class="segmented" role="group" aria-label="Route mode">
-            <button class="segment active" data-mode="pallet">Pallet</button>
-            <button class="segment" data-mode="uboat">U-boat</button>
-          </div>
-          <p id="modeNote">Bulk pull early, work front to back, finish near receiving.</p>
-        </section>
-
-        <section class="manager-note" aria-label="Manager note">
+        <section class="route-strip app-view route-view" aria-label="Today route summary">
           <div>
-            <p class="eyebrow">Manager note</p>
-            <h2>Core hit only for new merchandisers</h2>
+            <span class="label">Route</span>
+            <strong id="routeSummary">8 stops</strong>
           </div>
-          <p>Prioritize front coolers, ad displays, Aisle 5 fast movers, Gatorade, and energy. Skip full aisle detail unless the store is visibly empty.</p>
+          <div>
+            <span class="label">Weather</span>
+            <strong id="weatherSummary">Heat lift +18%</strong>
+          </div>
+          <div>
+            <span class="label">Time saved</span>
+            <strong id="savedSummary">3h 20m est.</strong>
+          </div>
         </section>
 
-        <section class="sold-displays" aria-label="Sold displays">
+        <section class="section-panel route-panel app-view route-view" aria-label="Today route">
           <div class="section-head">
             <div>
-              <p class="eyebrow">Rep-added</p>
-              <h2>Sold Displays</h2>
+              <p class="eyebrow">Typical sales rep day</p>
+              <h2>Today's Beverage Route</h2>
             </div>
-            <button class="secondary-button compact-button" id="addDisplayButton">Add</button>
+            <span id="routeCount">3 stores</span>
           </div>
-          <p>Displays the route owner sold into this store. Fill-ins should check these even when they are not on the standard aisle map.</p>
-          <div id="soldDisplayList" class="display-list"></div>
+          <div id="storeList" class="store-list"></div>
         </section>
 
-        <section class="map-panel" aria-label="Store route map">
-          <div class="map-head">
+        <section class="section-panel brief-panel app-view route-view order-view sku-view returns-view submit-view" aria-live="polite">
+          <div class="store-heading">
             <div>
-              <h2>Interactive Map</h2>
-              <p>Tap a stop to focus the route. Work front to back and finish near receiving.</p>
+              <p class="eyebrow" id="storeMeta">Store brief</p>
+              <h2 id="storeName">Walmart Supercenter - Grand Blanc</h2>
             </div>
-            <span id="completeCount">0 / 6</span>
+            <span class="risk-pill high" id="riskPill">High</span>
           </div>
 
-          <div class="store-map" id="storeMap">
-            <div class="zone front">Front doors / registers</div>
-            <div class="aisle aisle-2">Aisle 2</div>
-            <div class="aisle aisle-3">Aisle 3</div>
-            <div class="aisle aisle-5">Aisle 5</div>
-            <div class="zone receiving">Back wall receiving</div>
-            <svg class="route-line" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-              <polyline id="routePath" points=""></polyline>
-            </svg>
+          <div class="brief-grid">
+            <div>
+              <span class="label">Visit</span>
+              <strong id="nextDelivery">2 days</strong>
+            </div>
+            <div>
+              <span class="label">Forecast</span>
+              <strong id="forecast">92F weekend</strong>
+            </div>
+            <div>
+              <span class="label">Order</span>
+              <strong id="caseTotal">57</strong>
+            </div>
           </div>
-          <div class="map-guide">
-            <h3>How to work this store</h3>
-            <ol>
-              <li><strong>Start front:</strong> fill register coolers before any aisle work.</li>
-              <li><strong>Clear front displays:</strong> lobby, seasonal, and ad stacks while you are already up front.</li>
-              <li><strong>Check deli:</strong> find rotisserie chicken and service the 7.5 oz mini-can rack.</li>
-              <li><strong>Move left-to-right through beverage sets:</strong> Aisle 2, Aisle 3, then Aisle 5.</li>
-              <li><strong>Do heavy pack work first:</strong> cubes, 24 packs, 12 packs, then 2 liters and small formats.</li>
-              <li><strong>Finish back:</strong> overstock, credits, cardboard, and route-owner notes near receiving.</li>
-            </ol>
+
+          <div class="insight-band">
+            <span>AI reason</span>
+            <p id="aiReason">Heat spike, low available stock, and strong prior weekend velocity.</p>
           </div>
         </section>
 
-        <section class="current-stop" aria-live="polite">
-          <div class="stop-title-row">
+        <section class="section-panel order-panel app-view order-view scan-view" aria-label="Auto-built order">
+          <div class="section-head">
             <div>
-              <p class="eyebrow" id="stopMeta">Stop 1 of 6</p>
-              <h2 id="stopName">Front register coolers</h2>
+              <p class="eyebrow">QOH + store order points</p>
+              <h2>Auto-Built Order</h2>
             </div>
-            <span class="time-pill" id="stopTime">20 min</span>
+            <button class="secondary-button compact-button" id="approveAllButton">Approve all</button>
           </div>
-          <p id="stopDescription">Highest-profit singles first. Check all register doors before moving deeper into the store.</p>
-          <div class="chips" id="productChips"></div>
-          <div class="sequence-panel">
-            <h3>Put-away order</h3>
-            <ol id="sequenceList"></ol>
+          <label class="order-search">
+            Search order
+            <input id="orderSearchInput" type="search" autocomplete="off" placeholder="Find SKU, brand, package, or location">
+          </label>
+          <div id="orderList" class="order-list"></div>
+        </section>
+
+        <section class="section-panel stock-panel app-view sku-view" aria-label="Store stock visibility">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">Store stock + scan targets</p>
+              <h2>Available Stock</h2>
+            </div>
+            <span id="stockSignal">7 risk SKUs</span>
           </div>
+          <div id="stockTable" class="stock-table"></div>
+        </section>
+
+        <section class="section-panel check-panel app-view sku-view" aria-label="Check first">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">Scan-assisted workflow</p>
+              <h2>Scan / Check First</h2>
+            </div>
+            <span id="checkCount">5 checks</span>
+          </div>
+          <div id="checkList" class="check-list"></div>
+        </section>
+
+        <section class="section-panel display-panel app-view display-view" aria-label="Upcoming display changes and promotions">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">Ad planner + promo execution</p>
+              <h2>Displays / Promotions</h2>
+            </div>
+            <span id="displaySummary">0 changes</span>
+          </div>
+          <div id="displayList" class="display-list"></div>
+        </section>
+
+        <section class="section-panel scanner-panel app-view sku-view scan-view" aria-label="Product scanner lookup">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">Store-specific product catalog</p>
+              <h2>Zebra Product Catalog</h2>
+            </div>
+            <span id="catalogCount">0 SKUs</span>
+          </div>
+          <label class="scan-field">
+            Scan UPC or enter SKU
+            <input id="scanInput" type="search" autocomplete="off" placeholder="Scan barcode or type Pepsi 20oz">
+          </label>
+          <div id="scanResult" class="scan-result"></div>
+          <div class="store-catalog-head">
+            <span>Authorized in this store</span>
+            <b id="storeCatalogCount">0 items</b>
+          </div>
+          <label class="catalog-search">
+            Search store products
+            <input id="catalogSearchInput" type="search" autocomplete="off" placeholder="Search brand, SKU, package, category">
+          </label>
+          <div class="catalog-add-row">
+            <select id="catalogAddSelect" aria-label="Add product to this store"></select>
+            <button class="secondary-button compact-button" id="addCatalogProductButton">Add</button>
+          </div>
+          <div id="storeCatalogList" class="store-catalog-list"></div>
+        </section>
+
+        <section class="section-panel weather-panel app-view route-view order-view" aria-label="Weather impact">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">Demand before it happens</p>
+              <h2>Weather Lift</h2>
+            </div>
+            <span id="weatherLabel">Fri-Sun</span>
+          </div>
+          <div class="weather-days" id="weatherDays"></div>
+          <div class="lift-bars" id="liftBars"></div>
+        </section>
+
+        <section class="section-panel returns-panel app-view returns-view" aria-label="Returns">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">Zebra returns</p>
+              <h2>Returns / Credits</h2>
+            </div>
+            <span id="returnsSummary">0 items</span>
+          </div>
+          <div id="returnsList" class="returns-list"></div>
+          <div class="return-actions" aria-label="Return categories">
+            <button class="secondary-button compact-button" data-return-type="OOD">OOD</button>
+            <button class="secondary-button compact-button" data-return-type="Breakage">Breakage</button>
+            <button class="secondary-button compact-button" data-return-type="Sellable">Sellable</button>
+          </div>
+        </section>
+
+        <section class="section-panel review-panel app-view submit-view" aria-label="Final review">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">Zebra order workflow</p>
+              <h2>Final Order Review</h2>
+            </div>
+            <span id="approvalStatus">Draft</span>
+          </div>
+          <div id="reviewMath" class="review-math"></div>
           <div class="action-row">
-            <button class="secondary-button" id="verifyButton">Verify</button>
-            <button class="primary-button" id="completeButton">Mark complete</button>
+            <button class="secondary-button" id="editButton">Edit</button>
+            <button class="primary-button" id="sendButton">Submit Zebra Order</button>
           </div>
-        </section>
-
-        <section class="route-list" aria-label="Route order">
-          <div class="section-head">
-            <h2>Default Route</h2>
-            <span>Manual order</span>
-          </div>
-          <ol id="routeList"></ol>
         </section>
       </main>
 
-      <nav class="bottom-nav" aria-label="Primary">
-        <button class="nav-item active" data-view="route">Route</button>
-        <button class="nav-item" data-view="map">Map</button>
-        <button class="nav-item" data-view="verify">Verify</button>
+      <nav class="workflow-tabs" aria-label="Primary workflow">
+        <button class="nav-item active" data-target=".order-panel">Order</button>
+        <button class="nav-item" data-target=".check-panel">Scan</button>
+        <button class="nav-item" data-target=".display-panel">Promos</button>
+        <button class="nav-item returns-nav" data-target=".returns-panel">Returns</button>
+        <button class="nav-item" data-target=".scanner-panel">Catalog</button>
+        <button class="nav-item" data-target=".review-panel">Review</button>
       </nav>
+
     </div>
 
-    <dialog id="verifyDialog">
-      <form method="dialog" class="verify-form">
-        <div class="dialog-head">
-          <div>
-            <p class="eyebrow">Store verification</p>
-            <h2 id="verifyTitle">Front register coolers</h2>
-          </div>
-          <button class="icon-button" value="cancel" aria-label="Close" title="Close">X</button>
-        </div>
-
-        <label>
-          Location type
-          <select id="locationType">
-            <option>Register cooler</option>
-            <option>Cold vault</option>
-            <option>Main aisle</option>
-            <option>Endcap</option>
-            <option>Lobby display</option>
-            <option>Seasonal display</option>
-            <option>Backstock</option>
-            <option>Other</option>
-          </select>
-        </label>
-
-        <div class="field-grid">
-          <label>
-            Aisle
-            <input id="aisleInput" placeholder="Front">
-          </label>
-          <label>
-            Section
-            <select id="sectionInput">
-              <option>Front</option>
-              <option>Middle</option>
-              <option>Back</option>
-              <option>Left</option>
-              <option>Right</option>
-            </select>
-          </label>
-        </div>
-
-        <label>
-          Priority
-          <select id="priorityInput">
-            <option>High</option>
-            <option>Medium</option>
-            <option>Low</option>
-          </select>
-        </label>
-
-        <label>
-          Notes
-          <textarea id="notesInput" rows="3" placeholder="Cooler door number, display name, manager instruction"></textarea>
-        </label>
-
-        <menu>
-          <button class="secondary-button" value="cancel">Cancel</button>
-          <button class="primary-button" id="saveVerifyButton" value="default">Save verification</button>
-        </menu>
-      </form>
-    </dialog>
-
-    <dialog id="displayDialog">
-      <form method="dialog" class="verify-form">
-        <div class="dialog-head">
-          <div>
-            <p class="eyebrow">Rep-added display</p>
-            <h2>Add sold display</h2>
-          </div>
-          <button class="icon-button" value="cancel" aria-label="Close" title="Close">X</button>
-        </div>
-
-        <label>
-          Display name
-          <input id="displayNameInput" placeholder="Deli mini-can stack">
-        </label>
-
-        <div class="field-grid">
-          <label>
-            Department
-            <input id="displayDepartmentInput" placeholder="Deli">
-          </label>
-          <label>
-            Placement
-            <input id="displayPlacementInput" placeholder="Near chicken rack">
-          </label>
-        </div>
-
-        <label>
-          Product group
-          <input id="displayProductInput" placeholder="7.5 oz mini cans">
-        </label>
-
-        <label>
-          Priority
-          <select id="displayPriorityInput">
-            <option>High</option>
-            <option>Medium</option>
-            <option>Low</option>
-          </select>
-        </label>
-
-        <label>
-          Notes
-          <textarea id="displayNotesInput" rows="3" placeholder="Manager approved, ad week, how to find it"></textarea>
-        </label>
-
-        <menu>
-          <button class="secondary-button" value="cancel">Cancel</button>
-          <button class="primary-button" id="saveDisplayButton" value="default">Save display</button>
-        </menu>
-      </form>
-    </dialog>
-
-    <script src="app.js"></script>
+    <script src="product-catalog.js?v=20260610-cooler-packages"></script>
+    <script src="app.js?v=20260923-promo-datecheck-warehouse"></script>
   </body>
 </html>
