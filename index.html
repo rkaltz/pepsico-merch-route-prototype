@@ -134,11 +134,11 @@
           <div id="displayList" class="display-list"></div>
         </section>
 
-        <section class="section-panel scanner-panel app-view sku-view scan-view" aria-label="Product scanner lookup">
+        <section class="section-panel scanner-panel app-view scan-view" aria-label="Product scanner lookup">
           <div class="section-head">
             <div>
-              <p class="eyebrow">Store-specific product catalog</p>
-              <h2>Zebra Product Catalog</h2>
+              <p class="eyebrow">Scan product</p>
+              <h2>Zebra Product Scan</h2>
             </div>
             <span id="catalogCount">0 SKUs</span>
           </div>
@@ -147,6 +147,16 @@
             <input id="scanInput" type="search" autocomplete="off" placeholder="Scan barcode or type Pepsi 20oz">
           </label>
           <div id="scanResult" class="scan-result"></div>
+        </section>
+
+        <section class="section-panel catalog-panel app-view catalog-view" aria-label="Store product catalog">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">Store-specific product catalog</p>
+              <h2>Product Catalog</h2>
+            </div>
+            <span>Search all SKUs</span>
+          </div>
           <div class="store-catalog-head">
             <span>Authorized in this store</span>
             <b id="storeCatalogCount">0 items</b>
@@ -208,16 +218,16 @@
 
       <nav class="workflow-tabs" aria-label="Primary workflow">
         <button class="nav-item active" data-target=".order-panel">Order</button>
-        <button class="nav-item" data-target=".check-panel">Scan</button>
+        <button class="nav-item" data-target=".scanner-panel">Scan</button>
         <button class="nav-item" data-target=".display-panel">Promos</button>
         <button class="nav-item returns-nav" data-target=".returns-panel">Returns</button>
-        <button class="nav-item" data-target=".scanner-panel">Catalog</button>
+        <button class="nav-item" data-target=".catalog-panel">Catalog</button>
         <button class="nav-item" data-target=".review-panel">Review</button>
       </nav>
 
     </div>
 
     <script src="product-catalog.js?v=20260610-cooler-packages"></script>
-    <script src="app.js?v=20260923-promo-datecheck-warehouse"></script>
+    <script src="app.js?v=20260923-qa-search-baseline"></script>
   </body>
 </html>

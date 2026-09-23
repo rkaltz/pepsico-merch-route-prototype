@@ -494,9 +494,9 @@ const catalogSearchInput = document.querySelector("#catalogSearchInput");
 const viewMap = {
   ".route-panel": "route-view",
   ".order-panel": "order-view",
-  ".check-panel": "scan-view",
+  ".scanner-panel": "scan-view",
   ".display-panel": "display-view",
-  ".scanner-panel": "sku-view",
+  ".catalog-panel": "catalog-view",
   ".returns-panel": "returns-view",
   ".review-panel": "submit-view"
 };
@@ -665,12 +665,17 @@ function orderedItemsByLocation(order) {
 }
 
 function orderItemMatchesSearch(item, searchTerm) {
-  if (!searchTerm) return true;
-  return [item.sku, item.location, orderSection(item), item.category, item.package]
+  const term = normalizeSearchText(searchTerm);
+  if (!term) return true;
+  const product = productByStoreItem(item);
+  if (product && searchProducts([product], term).length) return true;
+  const itemText = normalizeSearchText(
+    [item.sku, item.location, orderSection(item), item.category, item.package]
     .filter(Boolean)
     .join(" ")
-    .toLowerCase()
-    .includes(searchTerm);
+  );
+  const tokens = term.split(/\s+/).filter(Boolean);
+  return itemText.includes(term) || tokens.every((token) => itemText.includes(searchSynonyms[token] || token));
 }
 
 function orderItemMatchesScannedProduct(item, productSku) {
@@ -785,7 +790,7 @@ function renderBrief(store) {
 function renderOrder(store) {
   let currentGroup = "";
   const searchTerm = (orderSearchInput?.value || "").trim().toLowerCase();
-  const isScanView = activeViewTarget === ".check-panel";
+  const isScanView = activeViewTarget === ".scanner-panel";
   const showDateChecks = activeViewTarget === ".order-panel" && !searchTerm && !activeScannedProductSku;
   const useScannedProductFilter = isScanView && activeScannedProductSku;
   const scannedProduct = useScannedProductFilter
@@ -1533,12 +1538,14 @@ function renderStoreCatalog(store) {
   if (!storeCatalogList || !storeCatalogCount) return;
   const products = storeAuthorizedCatalog(store);
   const searchTerm = (catalogSearchInput?.value || "").trim();
+  const authorizedSkus = new Set(products.map((product) => product.sku));
   const visibleProducts = searchTerm
-    ? searchProducts(products, searchTerm).map((result) => result.product)
+    ? searchProducts(productCatalog, searchTerm).map((result) => result.product)
     : products;
-  storeCatalogCount.textContent = searchTerm ? `${visibleProducts.length}/${products.length} items` : `${products.length} items`;
+  storeCatalogCount.textContent = searchTerm
+    ? `${visibleProducts.length} matches / ${products.length} authorized`
+    : `${products.length} items`;
   if (catalogAddSelect) {
-    const authorizedSkus = new Set(products.map((product) => product.sku));
     const availableProducts = productCatalog.filter((product) => !authorizedSkus.has(product.sku));
     catalogAddSelect.innerHTML = availableProducts.length
       ? availableProducts
@@ -1550,16 +1557,23 @@ function renderStoreCatalog(store) {
   storeCatalogList.innerHTML = visibleProducts.length
     ? visibleProducts
         .map(
-          (product) => `
+          (product) => {
+            const isAuthorized = authorizedSkus.has(product.sku);
+            return `
             <button class="catalog-item" data-catalog-sku="${product.sku}">
               <span>
                 <strong>${product.name}</strong>
                 <small>${product.category} / ${product.package} / ${product.salesChannel || "Standard"}</small>
               </span>
-              <b>${product.dataStatus.includes("pending") ? "Pending" : "Ready"}</b>
-              <i data-remove-catalog-sku="${product.sku}" aria-label="Remove ${product.name} from this store">Remove</i>
+              <b>${isAuthorized ? "In store" : "Available"}</b>
+              <i ${
+                isAuthorized
+                  ? `data-remove-catalog-sku="${product.sku}" aria-label="Remove ${product.name} from this store">Remove`
+                  : `data-add-catalog-sku="${product.sku}" aria-label="Add ${product.name} to this store">Add`
+              }</i>
             </button>
-          `
+          `;
+          }
         )
         .join("")
     : `<div class="empty-state">${products.length ? "No products match this search." : "No authorized catalog loaded for this store."}</div>`;
@@ -1575,6 +1589,15 @@ function renderStoreCatalog(store) {
     button.addEventListener("click", (event) => {
       event.stopPropagation();
       removeProductFromStoreCatalog(store, button.dataset.removeCatalogSku);
+      orderBuilt = false;
+      render();
+    });
+  });
+
+  storeCatalogList.querySelectorAll("[data-add-catalog-sku]").forEach((button) => {
+    button.addEventListener("click", (event) => {
+      event.stopPropagation();
+      addProductToStoreCatalog(store, button.dataset.addCatalogSku);
       orderBuilt = false;
       render();
     });
