@@ -157,6 +157,7 @@
             <span id="cameraScanStatus">Camera scan is a demo fallback; Zebra remains the production scanner.</span>
           </div>
           <div class="camera-preview hidden" id="cameraPreview" aria-label="Camera barcode scanner">
+            <div id="html5QrReader" class="html5-reader"></div>
             <video id="cameraVideo" playsinline muted></video>
             <div class="scan-reticle" aria-hidden="true"></div>
           </div>
@@ -242,6 +243,6 @@
     </div>
 
     <script src="product-catalog.js?v=20260923-camera-scan"></script>
-    <script src="app.js?v=20260923-frame-capture"></script>
+    <script src="app.js?v=20260923-html5qrcode"></script>
   </body>
 </html>

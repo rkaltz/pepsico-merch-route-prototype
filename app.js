@@ -453,6 +453,8 @@ let zxingControls = null;
 let zxingReader = null;
 let zxingLoadPromise = null;
 let zxingModule = null;
+let html5QrcodeScanner = null;
+let html5QrcodeLoadPromise = null;
 let cameraEngine = "";
 let cameraCanvas = null;
 const reorderPointOverrides = JSON.parse(localStorage.getItem("reorderPointOverrides") || "{}");
@@ -503,6 +505,7 @@ const stopCameraButton = document.querySelector("#stopCameraButton");
 const cameraScanStatus = document.querySelector("#cameraScanStatus");
 const cameraPreview = document.querySelector("#cameraPreview");
 const cameraVideo = document.querySelector("#cameraVideo");
+const html5QrReader = document.querySelector("#html5QrReader");
 const storeCatalogCount = document.querySelector("#storeCatalogCount");
 const storeCatalogList = document.querySelector("#storeCatalogList");
 const catalogAddSelect = document.querySelector("#catalogAddSelect");
@@ -1688,6 +1691,16 @@ function stopCameraScan(message = "") {
     zxingReader.reset();
   }
 
+  if (html5QrcodeScanner) {
+    const scanner = html5QrcodeScanner;
+    html5QrcodeScanner = null;
+    Promise.resolve()
+      .then(() => scanner.stop?.())
+      .catch(() => {})
+      .then(() => scanner.clear?.())
+      .catch(() => {});
+  }
+
   if (cameraStream) {
     cameraStream.getTracks().forEach((track) => track.stop());
     cameraStream = null;
@@ -1697,6 +1710,8 @@ function stopCameraScan(message = "") {
     if (typeof cameraVideo.pause === "function") cameraVideo.pause();
     cameraVideo.srcObject = null;
   }
+
+  if (html5QrReader) html5QrReader.innerHTML = "";
 
   cameraDetector = null;
   cameraEngine = "";
@@ -1758,6 +1773,57 @@ function loadZxingBrowser() {
     return module;
   });
   return zxingLoadPromise;
+}
+
+function loadHtml5Qrcode() {
+  if (window.Html5Qrcode) return Promise.resolve(window.Html5Qrcode);
+  if (html5QrcodeLoadPromise) return html5QrcodeLoadPromise;
+
+  html5QrcodeLoadPromise = new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = "https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js";
+    script.async = true;
+    script.onload = () => {
+      if (window.Html5Qrcode) resolve(window.Html5Qrcode);
+      else reject(new Error("html5-qrcode scanner did not load."));
+    };
+    script.onerror = () => reject(new Error("html5-qrcode scanner could not be loaded."));
+    document.head.appendChild(script);
+  });
+
+  return html5QrcodeLoadPromise;
+}
+
+async function startHtml5QrcodeScan() {
+  if (!navigator.mediaDevices?.getUserMedia) throw new Error("Camera access is not available.");
+  if (!html5QrReader) throw new Error("Scanner mount is not available.");
+  const Html5Qrcode = await loadHtml5Qrcode();
+  const formats = window.Html5QrcodeSupportedFormats || {};
+  cameraEngine = "html5-qrcode";
+  html5QrReader.innerHTML = "";
+  html5QrcodeScanner = new Html5Qrcode("html5QrReader", {
+    formatsToSupport: [formats.UPC_A, formats.UPC_E, formats.EAN_13, formats.EAN_8].filter((format) => format !== undefined),
+    verbose: false
+  });
+  setCameraStatus("Auto scanning UPC/EAN. Fill the box with the barcode and hold steady.");
+  await html5QrcodeScanner.start(
+    { facingMode: "environment" },
+    {
+      fps: 12,
+      qrbox: (viewfinderWidth, viewfinderHeight) => ({
+        width: Math.floor(viewfinderWidth * 0.9),
+        height: Math.max(90, Math.floor(viewfinderHeight * 0.34))
+      }),
+      aspectRatio: 1.7777778,
+      disableFlip: true
+    },
+    (decodedText) => {
+      if (applyScannedCode(decodedText)) {
+        stopCameraScan(`Captured ${decodedText}. Product lookup updated.`);
+      }
+    },
+    () => {}
+  );
 }
 
 function decodedTextFromResult(result) {
@@ -1845,16 +1911,23 @@ async function startCameraScan() {
   setCameraStatus("Opening camera...");
 
   try {
-    await startZxingScan();
-  } catch (zxingError) {
+    await startHtml5QrcodeScan();
+  } catch (html5Error) {
     try {
       stopCameraScan();
       setCameraActive(true);
       setCameraStatus("Switching scanner engine...");
-      await startNativeBarcodeDetectorScan();
-      setCameraStatus("Auto scanning UPC. Fill the box with the barcode and hold steady.");
-    } catch (nativeError) {
-      stopCameraScan("Camera scan is blocked or unavailable. Allow camera access, reopen this page in Safari, or type the UPC.");
+      await startZxingScan();
+    } catch (zxingError) {
+      try {
+        stopCameraScan();
+        setCameraActive(true);
+        setCameraStatus("Switching scanner engine...");
+        await startNativeBarcodeDetectorScan();
+        setCameraStatus("Auto scanning UPC. Fill the box with the barcode and hold steady.");
+      } catch (nativeError) {
+        stopCameraScan("Camera scan is blocked or unavailable. Allow camera access, reopen this page in Safari, or type the UPC.");
+      }
     }
   }
 }
