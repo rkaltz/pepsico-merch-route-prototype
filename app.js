@@ -1738,27 +1738,15 @@ async function startNativeBarcodeDetectorScan() {
 }
 
 function loadZxingBrowser() {
-  if (window.ZXingBrowser) return Promise.resolve(window.ZXingBrowser);
   if (zxingLoadPromise) return zxingLoadPromise;
-
-  zxingLoadPromise = new Promise((resolve, reject) => {
-    const script = document.createElement("script");
-    script.src = "https://unpkg.com/@zxing/browser@latest/umd/index.min.js";
-    script.async = true;
-    script.onload = () => {
-      if (window.ZXingBrowser) resolve(window.ZXingBrowser);
-      else reject(new Error("ZXing browser scanner did not load."));
-    };
-    script.onerror = () => reject(new Error("ZXing browser scanner could not be loaded."));
-    document.head.appendChild(script);
-  });
-
+  zxingLoadPromise = import("https://cdn.jsdelivr.net/npm/@zxing/browser@0.2.1/+esm");
   return zxingLoadPromise;
 }
 
 async function startZxingScan() {
   if (!navigator.mediaDevices?.getUserMedia) throw new Error("Camera access is not available.");
   const zxing = await loadZxingBrowser();
+  if (!zxing?.BrowserMultiFormatReader) throw new Error("ZXing browser scanner did not load.");
   zxingReader = new zxing.BrowserMultiFormatReader();
   setCameraStatus("Camera is open. Center the UPC inside the box.");
   zxingControls = await zxingReader.decodeFromVideoDevice(undefined, cameraVideo, (result) => {
@@ -1788,7 +1776,7 @@ async function startCameraScan() {
       setCameraStatus("Native scanner unavailable. Loading iPhone camera fallback...");
       await startZxingScan();
     } catch (fallbackError) {
-      stopCameraScan("Camera scan is not available in this browser. Type or paste the UPC to use the same lookup.");
+      stopCameraScan("Camera scan is blocked or unavailable. Allow camera access, reopen this page in Safari, or type the UPC.");
     }
   }
 }
