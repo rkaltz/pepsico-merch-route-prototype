@@ -100,7 +100,10 @@ function loadPrototype() {
     .replace("const productCatalog = window.PRODUCT_CATALOG || [];", "var productCatalog = window.PRODUCT_CATALOG || [];")
     .replace("const reorderPointOverrides =", "var reorderPointOverrides =")
     .replace("const storeCatalogOverrides =", "var storeCatalogOverrides =")
-    .replace("const orderItemOverrides =", "var orderItemOverrides =");
+    .replace("const orderItemOverrides =", "var orderItemOverrides =")
+    .replace("const orderSearchInput =", "var orderSearchInput =")
+    .replace("const catalogSearchInput =", "var catalogSearchInput =")
+    .replace("const scanInput =", "var scanInput =");
   vm.runInContext(appCode, context);
   return context;
 }
@@ -139,6 +142,10 @@ function testSearch(context) {
     ["pepsi 20oz", "Pepsi 20oz Bottle"],
     ["pepsi cooler", "Pepsi 20oz Bottle"],
     ["pepsi 12pk", "Pepsi 12pk 12oz Cans"],
+    ["2L", "Pepsi 2 Liter Bottle"],
+    ["2 litre", "Pepsi 2 Liter Bottle"],
+    ["12 pack", "Pepsi 12pk 12oz Cans"],
+    ["20 oz", "Pepsi 20oz Bottle"],
     ["mountain dew 20oz", "Mountain Dew 20oz Bottle"],
     ["mountain dew 12pk", "Mountain Dew 12pk 12oz Cans"],
     ["012000002946", "Pepsi 20oz Bottle"]
@@ -166,6 +173,12 @@ function testInventory(context) {
   assert(context.warehouseQoh({ sku: "No WH", sold: 99, base: 8 }) === null, "Unknown warehouse QOH should stay null");
   assert(context.warehouseText({ sku: "No WH", sold: 99, base: 8 }) === "Unavailable", "Unknown warehouse QOH should display Unavailable");
   assert(context.warehouseQoh({ warehouseQoh: 0 }) === 0, "Warehouse zero should remain zero, not unknown");
+  const displayedWarehouseValues = context.stores
+    .flatMap((store) => store.order)
+    .map((item) => context.warehouseQoh(item))
+    .filter((value) => value !== null);
+  [86, 74, 230, 0, 4].forEach((value) => assert(displayedWarehouseValues.includes(value), `Missing explicit WH source ${value}`));
+  [109, 80].forEach((value) => assert(!displayedWarehouseValues.includes(value), `Unexpected fabricated WH value ${value}`));
 }
 
 function testOrderingMath(context) {
@@ -180,6 +193,7 @@ function testOrderingMath(context) {
 
   assert(walmartTwentyOunce.some((item) => item.sku === "Pepsi 20oz"), "Order search for 20 oz should find Pepsi 20oz");
   assert(walmartTwentyOunce.some((item) => item.sku === "Mountain Dew 20oz"), "Order search for 20 oz should find Mountain Dew 20oz");
+  assert(!walmart.order.some((item) => context.orderItemMatchesSearch(item, "2 liter")), "Order search should only search current store order assortment");
   assert(context.activeReorderPoint(walmart, walmartPepsi) === 50, "Rep override did not win for Walmart Pepsi 12pk");
   assert(context.activeReorderPoint(kroger, krogerPepsi) !== 50, "Walmart reorder override leaked into Kroger");
   assert(context.autoOrderGap(walmart, walmartPepsi) === 31, "Auto order gap should be reorder point minus QOH");
@@ -188,6 +202,19 @@ function testOrderingMath(context) {
   assert(context.warehouseStatus({ base: 1 }).level === "unknown", "Missing warehouse data should be unknown");
   delete context.reorderPointOverrides[walmartKey];
   delete context.reorderPointOverrides[krogerKey];
+}
+
+function testSmartOrder(context) {
+  const walmart = context.stores[0];
+  const approvedBefore = walmart.order.filter((item) => item.approved).length;
+  const recommendation = context.smartOrder(walmart);
+  const orderTotal = context.orderTotal(walmart);
+  const normalTotal = walmart.order.reduce((sum, item) => sum + context.normalCases(item), 0);
+  assert(recommendation.suggestedTotal === orderTotal, "Smart Order total should equal current recommended order total");
+  assert(recommendation.normalTotal === normalTotal, "Smart Order normal total should come from preserved normal base");
+  assert(recommendation.drivers.length <= 4, "Smart Order should stay compact");
+  assert(recommendation.explanation.length <= 90, "Smart Order explanation should be short");
+  assert(walmart.order.filter((item) => item.approved).length === approvedBefore, "Smart Order calculation must not approve items");
 }
 
 function testCatalogIsolation(context) {
@@ -206,12 +233,25 @@ function testCatalogIsolation(context) {
   context.removeProductFromStoreCatalog(walmart, sku);
 }
 
+function testStoreSwitchClearsFilters(context) {
+  context.orderSearchInput.value = "2 liter";
+  context.catalogSearchInput.value = "energy";
+  context.scanInput.value = "pepsi 20oz";
+  context.activeScannedProductSku = "PEP-PEPSI-20OZ";
+  context.setActiveStore(1);
+  assert(context.orderSearchInput.value === "", "Store switch should clear order search");
+  assert(context.catalogSearchInput.value === "", "Store switch should clear catalog search");
+  assert(context.scanInput.value === "", "Store switch should clear scan input");
+}
+
 function run() {
   const context = loadPrototype();
   testSearch(context);
   testInventory(context);
   testOrderingMath(context);
+  testSmartOrder(context);
   testCatalogIsolation(context);
+  testStoreSwitchClearsFilters(context);
   console.log("QA regression baseline passed");
 }
 

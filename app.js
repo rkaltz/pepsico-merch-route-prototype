@@ -7,7 +7,7 @@ const stores = [
     address: "Large format / high-volume",
     account: "Walmart",
     visitType: "Zebra order + displays",
-    dataMode: "Near-real-time inventory",
+    dataMode: "Retailer inventory signal",
     confidence: "High confidence",
     risk: "High",
     riskScore: 94,
@@ -16,7 +16,7 @@ const stores = [
     timeSaved: "38 min",
     routeNote: "Start here before traffic builds. Use Zebra scans only on exceptions, not every SKU.",
     aiReason:
-      "Near-real-time inventory, heat, and strong weekend velocity show this store will lose sales before the next delivery without a heavier beverage order.",
+      "Retailer signal, heat, and strong weekend velocity show this store will lose sales before the next delivery without a heavier beverage order.",
     weather: [
       { day: "Fri", temp: 91, condition: "Sunny" },
       { day: "Sat", temp: 94, condition: "Sunny" },
@@ -466,7 +466,8 @@ const riskPill = document.querySelector("#riskPill");
 const nextDelivery = document.querySelector("#nextDelivery");
 const forecast = document.querySelector("#forecast");
 const caseTotal = document.querySelector("#caseTotal");
-const aiReason = document.querySelector("#aiReason");
+const smartOrderSummary = document.querySelector("#smartOrderSummary");
+const reviewSuggestedOrderButton = document.querySelector("#reviewSuggestedOrderButton");
 const orderList = document.querySelector("#orderList");
 const orderSearchInput = document.querySelector("#orderSearchInput");
 const stockTable = document.querySelector("#stockTable");
@@ -504,6 +505,10 @@ const viewMap = {
 
 function finalCases(item) {
   return Math.max(0, item.base);
+}
+
+function normalCases(item) {
+  return Math.max(0, item.normalBase ?? item.base);
 }
 
 function learnedDemandLift(item) {
@@ -594,6 +599,57 @@ function warehouseStatus(item) {
   if (warehouse <= 0) return { level: "out", label: "Warehouse OOS", message: "Do not promise this order without substitution or manager note." };
   if (warehouse < orderCases) return { level: "short", label: "Warehouse short", message: `Only ${warehouse} cases available for ${orderCases} case order.` };
   return { level: "ok", label: "Warehouse OK", message: "" };
+}
+
+function itemFamily(item) {
+  const sku = item.sku.toLowerCase();
+  if (sku.includes("gatorade") || sku.includes("gatorlyte")) return "Gatorade";
+  if (sku.includes("aquafina") || sku.includes("water") || sku.includes("lifewtr")) return "Water";
+  if (sku.includes("mountain dew") || sku.includes("dew")) return "Mountain Dew";
+  if (sku.includes("pepsi")) return "Pepsi";
+  if (sku.includes("propel")) return "Propel";
+  if (sku.includes("rockstar") || sku.includes("amp") || sku.includes("alani") || sku.includes("celsius")) return "Energy";
+  return item.sku.split(/\s+/).slice(0, 2).join(" ");
+}
+
+function smartOrder(store) {
+  const suggestedTotal = orderTotal(store);
+  const normalTotal = store.order.reduce((sum, item) => sum + normalCases(item), 0);
+  const familyMap = new Map();
+
+  store.order.forEach((item) => {
+    const family = itemFamily(item);
+    const current = familyMap.get(family) || { family, suggested: 0, normal: 0, sold: 0, qoh: 0 };
+    current.suggested += finalCases(item);
+    current.normal += normalCases(item);
+    current.sold += item.sold || 0;
+    current.qoh += storeQoh(item);
+    familyMap.set(family, current);
+  });
+
+  const drivers = [...familyMap.values()]
+    .map((driver) => ({ ...driver, delta: driver.suggested - driver.normal }))
+    .sort((a, b) => b.delta - a.delta || b.sold - a.sold)
+    .filter((driver) => driver.delta > 0)
+    .slice(0, 4);
+
+  const reasons = [];
+  const hotWeather = store.weather?.some((day) => day.temp >= 85);
+  const strongVelocity = store.order.some((item) => (item.stockoutWeeks || 0) >= 2 || (item.sold || 0) > storeQoh(item) * 2);
+  const lowInventory = store.order.some((item) => storeQoh(item) < activeReorderPoint(store, item));
+  const promoSupport = store.order.some((item) => (item.promo || 0) > 0);
+  if (hotWeather) reasons.push("hot weekend");
+  if (strongVelocity) reasons.push("strong recent velocity");
+  if (lowInventory) reasons.push("low current inventory");
+  if (promoSupport) reasons.push("promo support");
+
+  return {
+    suggestedTotal,
+    normalTotal,
+    aboveNormal: suggestedTotal - normalTotal,
+    drivers,
+    explanation: reasons.length ? `${reasons.join(" + ")}.` : "Review current QOH against store order points."
+  };
 }
 
 function dateCheckItems(store) {
@@ -711,6 +767,7 @@ function applyAutoOrderFromPoint(store, item) {
 function syncInitialAutoOrdersFromPoints() {
   stores.forEach((store) => {
     store.order.forEach((item) => {
+      if (item.normalBase === undefined) item.normalBase = Math.max(0, item.base || 0);
       const override = orderItemOverrides[orderItemOverrideKey(store, item)];
       if (!override || override.base === undefined) {
         item.base = autoOrderGap(store, item);
@@ -749,6 +806,9 @@ function renderRouteSummary() {
 function setActiveStore(index) {
   activeStoreIndex = Math.max(0, Math.min(stores.length - 1, index));
   activeScannedProductSku = "";
+  if (orderSearchInput) orderSearchInput.value = "";
+  if (catalogSearchInput) catalogSearchInput.value = "";
+  if (scanInput) scanInput.value = "";
   orderBuilt = false;
   render();
 }
@@ -790,6 +850,17 @@ function renderRoute() {
 }
 
 function renderBrief(store) {
+  const recommendation = smartOrder(store);
+  const comparison = recommendation.aboveNormal > 0
+    ? `<strong>${recommendation.aboveNormal} cases above normal</strong>`
+    : recommendation.aboveNormal < 0
+      ? `<strong>${Math.abs(recommendation.aboveNormal)} cases below normal</strong>`
+      : `<strong>Normal order level</strong>`;
+  const driverMarkup = recommendation.drivers.length
+    ? recommendation.drivers
+        .map((driver) => `<div><span>${driver.family}</span><b>+${driver.delta}</b></div>`)
+        .join("")
+    : `<div><span>Core order</span><b>Normal</b></div>`;
   storeMeta.textContent = `Stop ${store.stop} / ${store.eta} / ${store.account}`;
   storeName.textContent = store.name;
   riskPill.textContent = store.risk;
@@ -797,7 +868,15 @@ function renderBrief(store) {
   nextDelivery.textContent = store.nextDelivery;
   forecast.textContent = store.forecast;
   caseTotal.textContent = `${orderTotal(store)} cases`;
-  aiReason.textContent = `${store.dataMode}. ${store.aiReason}`;
+  smartOrderSummary.innerHTML = `
+    <div class="smart-order-total">
+      <span>Suggested order</span>
+      <strong>${recommendation.suggestedTotal} cases</strong>
+      ${comparison}
+    </div>
+    <div class="smart-order-drivers">${driverMarkup}</div>
+    <p>${recommendation.explanation}</p>
+  `;
 }
 
 function renderOrder(store) {
@@ -1771,6 +1850,17 @@ if (catalogSearchInput) {
 if (demoModeButton) {
   demoModeButton.addEventListener("click", () => {
     setZebraDemoMode(!document.body.classList.contains("zebra-demo"));
+  });
+}
+
+if (reviewSuggestedOrderButton) {
+  reviewSuggestedOrderButton.addEventListener("click", () => {
+    if (orderSearchInput) orderSearchInput.value = "";
+    activeScannedProductSku = "";
+    orderBuilt = false;
+    document.querySelectorAll(".nav-item").forEach((item) => item.classList.remove("active"));
+    document.querySelector('.nav-item[data-target=".order-panel"]')?.classList.add("active");
+    setActiveView(".order-panel");
   });
 }
 
