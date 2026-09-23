@@ -491,6 +491,7 @@ const storeCatalogList = document.querySelector("#storeCatalogList");
 const catalogAddSelect = document.querySelector("#catalogAddSelect");
 const addCatalogProductButton = document.querySelector("#addCatalogProductButton");
 const catalogSearchInput = document.querySelector("#catalogSearchInput");
+const demoModeButton = document.querySelector("#demoModeButton");
 const viewMap = {
   ".route-panel": "route-view",
   ".order-panel": "order-view",
@@ -597,6 +598,18 @@ function warehouseStatus(item) {
 
 function dateCheckItems(store) {
   return store.order.filter((item) => storeQoh(item) > 0 && (item.noSalesDays || 0) >= 60 && !dateCheckStatuses[dateCheckKey(store, item)]);
+}
+
+function setZebraDemoMode(enabled, updateUrl = true) {
+  document.body.classList.toggle("zebra-demo", enabled);
+  if (demoModeButton) {
+    demoModeButton.setAttribute("aria-pressed", String(enabled));
+  }
+  if (!updateUrl || !window.history?.replaceState) return;
+  const url = new URL(window.location.href);
+  if (enabled) url.searchParams.set("zebra", "1");
+  else url.searchParams.delete("zebra");
+  window.history.replaceState({}, "", url);
 }
 
 function replacementSuggestion(item) {
@@ -1678,6 +1691,7 @@ function setActiveView(target) {
 
 loadOrderItemOverrides();
 syncInitialAutoOrdersFromPoints();
+setZebraDemoMode(new URLSearchParams(window.location.search).get("zebra") === "1", false);
 renderCatalog();
 
 document.querySelector("#approveAllButton").addEventListener("click", () => {
@@ -1751,6 +1765,12 @@ if (addCatalogProductButton && catalogAddSelect) {
 if (catalogSearchInput) {
   catalogSearchInput.addEventListener("input", () => {
     renderStoreCatalog(stores[activeStoreIndex]);
+  });
+}
+
+if (demoModeButton) {
+  demoModeButton.addEventListener("click", () => {
+    setZebraDemoMode(!document.body.classList.contains("zebra-demo"));
   });
 }
 

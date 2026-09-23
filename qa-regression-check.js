@@ -19,6 +19,12 @@ function createElement(selector = "") {
       }
     },
     addEventListener() {},
+    setAttribute(name, value) {
+      this[name] = String(value);
+    },
+    getAttribute(name) {
+      return this[name] || null;
+    },
     scrollIntoView() {},
     querySelector() {
       return createElement(`${selector} child`);
@@ -34,8 +40,28 @@ function createElement(selector = "") {
 
 function loadPrototype() {
   const elements = new Map();
+  const bodyClasses = new Set();
   const document = {
-    body: { dataset: {} },
+    body: {
+      dataset: {},
+      classList: {
+        add(value) {
+          bodyClasses.add(value);
+        },
+        remove(value) {
+          bodyClasses.delete(value);
+        },
+        toggle(value, force) {
+          const shouldAdd = force === undefined ? !bodyClasses.has(value) : Boolean(force);
+          if (shouldAdd) bodyClasses.add(value);
+          else bodyClasses.delete(value);
+          return shouldAdd;
+        },
+        contains(value) {
+          return bodyClasses.has(value);
+        }
+      }
+    },
     querySelector(selector) {
       if (!elements.has(selector)) elements.set(selector, createElement(selector));
       return elements.get(selector);
@@ -47,7 +73,12 @@ function loadPrototype() {
   const localStorageData = {};
   const context = {
     console,
-    window: {},
+    URL,
+    URLSearchParams,
+    window: {
+      location: { href: "http://127.0.0.1:8091/", search: "" },
+      history: { replaceState() {} }
+    },
     document,
     localStorage: {
       getItem(key) {

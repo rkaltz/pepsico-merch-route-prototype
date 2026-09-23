@@ -37,6 +37,10 @@ button {
   cursor: pointer;
 }
 
+body.zebra-demo {
+  background: #dfe7ef;
+}
+
 .app-shell {
   max-width: 470px;
   min-height: 100vh;
@@ -57,6 +61,28 @@ button {
   padding: 16px 16px 12px;
   border-bottom: 1px solid var(--line);
   background: var(--surface);
+}
+
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mode-button {
+  min-height: 42px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--blue-dark);
+  padding: 0 11px;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.mode-button[aria-pressed="true"] {
+  border-color: #9ab7d5;
+  background: #e8f3ff;
 }
 
 .eyebrow,
@@ -1673,7 +1699,84 @@ body[data-active-view="scan-view"] .product-image img {
   color: var(--amber);
 }
 
-@media (max-width: 380px) {
+@media (min-width: 700px) {
+  body.zebra-demo {
+    display: grid;
+    justify-items: center;
+    align-items: start;
+    min-height: 100vh;
+    padding: 22px;
+  }
+
+  body.zebra-demo .app-shell {
+    position: relative;
+    width: 390px;
+    height: min(844px, calc(100vh - 44px));
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    border: 1px solid #b7c3d0;
+    border-radius: 10px;
+    box-shadow: 0 22px 60px rgba(24, 35, 52, 0.24);
+  }
+
+  body.zebra-demo .app-shell::before {
+    content: "Zebra handheld demo viewport";
+    position: sticky;
+    top: 0;
+    z-index: 8;
+    display: block;
+    border-bottom: 1px solid #c7d2df;
+    background: #edf4fb;
+    color: var(--muted);
+    padding: 6px 10px;
+    font-size: 10px;
+    font-weight: 900;
+    text-align: center;
+    text-transform: uppercase;
+  }
+
+  body.zebra-demo main {
+    grid-template-columns: 1fr;
+  }
+
+  body.zebra-demo .route-strip,
+  body.zebra-demo .brief-panel,
+  body.zebra-demo .route-panel,
+  body.zebra-demo .check-panel,
+  body.zebra-demo .weather-panel,
+  body.zebra-demo .scanner-panel,
+  body.zebra-demo .catalog-panel,
+  body.zebra-demo .order-panel,
+  body.zebra-demo .stock-panel,
+  body.zebra-demo .returns-panel,
+  body.zebra-demo .review-panel {
+    grid-column: auto;
+  }
+
+  body.zebra-demo .route-switcher {
+    top: 125px;
+  }
+
+  body.zebra-demo .workflow-tabs {
+    max-width: none;
+    margin: 0;
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 430px) {
+  .workflow-tabs {
+    gap: 4px;
+  }
+
+  .nav-item {
+    flex: 1 1 0;
+    min-width: 0;
+    font-size: 10px;
+    padding: 0 2px;
+  }
+
   .route-strip strong,
   .brief-grid strong {
     font-size: 12px;
@@ -1725,5 +1828,44 @@ body[data-active-view="scan-view"] .product-image img {
     max-width: 1080px;
     margin: 0 auto;
     justify-content: center;
+  }
+}
+
+@media (min-width: 700px) {
+  body.zebra-demo .app-shell {
+    width: 390px;
+    max-width: 390px;
+  }
+
+  body.zebra-demo main {
+    grid-template-columns: 1fr;
+  }
+
+  body.zebra-demo .route-strip,
+  body.zebra-demo .brief-panel,
+  body.zebra-demo .route-panel,
+  body.zebra-demo .check-panel,
+  body.zebra-demo .weather-panel,
+  body.zebra-demo .scanner-panel,
+  body.zebra-demo .catalog-panel,
+  body.zebra-demo .order-panel,
+  body.zebra-demo .stock-panel,
+  body.zebra-demo .returns-panel,
+  body.zebra-demo .review-panel {
+    grid-column: auto;
+  }
+
+  body.zebra-demo .workflow-tabs {
+    max-width: none;
+    margin: 0;
+    justify-content: flex-start;
+    gap: 4px;
+  }
+
+  body.zebra-demo .nav-item {
+    flex: 1 1 0;
+    min-width: 0;
+    font-size: 10px;
+    padding: 0 2px;
   }
 }
