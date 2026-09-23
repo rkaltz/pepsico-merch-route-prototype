@@ -898,6 +898,9 @@ function renderOrder(store) {
   const scanFilterBanner = scannedProduct
     ? `<div class="scan-filter-banner"><span>Scanned item: ${scannedProduct.name}</span><button id="clearScanFilterButton">Clear</button></div>`
     : "";
+  const scannedProductEmptyText = scannedProduct
+    ? `${scannedProduct.salesChannel === "Single can reference" ? "Single can reference" : "Product reference"} - ${scannedProduct.name} is not mapped to this store order.`
+    : "No order items match this search or scan.";
   const dateCheckMarkup = showDateChecks ? renderDateCheckMarkup(store) : "";
   orderList.innerHTML = scanFilterBanner + dateCheckMarkup + (orderedItems.length
     ? orderedItems
@@ -980,7 +983,7 @@ function renderOrder(store) {
       }
     )
     .join("")
-    : `<div class="empty-state">${store.order.length ? "No order items match this search or scan." : "No order items loaded."}</div>`);
+    : `<div class="empty-state">${store.order.length ? scannedProductEmptyText : "No order items loaded."}</div>`);
 
   const clearScanFilterButton = document.querySelector("#clearScanFilterButton");
   if (clearScanFilterButton) {

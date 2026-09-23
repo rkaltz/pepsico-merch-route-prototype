@@ -13,6 +13,19 @@ window.PRODUCT_CATALOG = [
     dataStatus: "SKU shell - UPC pending"
   },
   {
+    sku: "PEP-PEPSI-12OZ-CAN",
+    upcs: ["01201303", "012000000133"],
+    brand: "Pepsi",
+    name: "Pepsi 12oz Can",
+    category: "Cola",
+    package: "12oz single can",
+    salesChannel: "Single can reference",
+    ownership: "PepsiCo owned",
+    imageUrl: "",
+    imageStatus: "Needs official single-can product image",
+    dataStatus: "Photo-captured UPC-E 01201303; expanded UPC-A 012000000133 - verify with PepsiCo master data"
+  },
+  {
     sku: "PEP-DIET-PEPSI-12PK-12OZ",
     upcs: ["012000809958"],
     brand: "Diet Pepsi",

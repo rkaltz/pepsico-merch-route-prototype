@@ -142,12 +142,16 @@ function testSearch(context) {
     ["pepsi 20oz", "Pepsi 20oz Bottle"],
     ["pepsi cooler", "Pepsi 20oz Bottle"],
     ["pepsi 12pk", "Pepsi 12pk 12oz Cans"],
+    ["pepsi 12oz can", "Pepsi 12oz Can"],
+    ["single can", "Pepsi 12oz Can"],
     ["2L", "Pepsi 2 Liter Bottle"],
     ["2 litre", "Pepsi 2 Liter Bottle"],
     ["12 pack", "Pepsi 12pk 12oz Cans"],
     ["20 oz", "Pepsi 20oz Bottle"],
     ["mountain dew 20oz", "Mountain Dew 20oz Bottle"],
     ["mountain dew 12pk", "Mountain Dew 12pk 12oz Cans"],
+    ["01201303", "Pepsi 12oz Can"],
+    ["012000000133", "Pepsi 12oz Can"],
     ["012000002946", "Pepsi 20oz Bottle"]
   ];
   specificCases.forEach(([query, expected]) => {
@@ -215,6 +219,11 @@ function testScanOrderMatch(context) {
   context.activeScannedProductSku = scannedProduct.sku;
   const hiddenSearchTerm = context.activeViewTarget === ".scanner-panel" ? "" : context.orderSearchInput.value.trim().toLowerCase();
   assert(context.orderItemMatchesSearch(pepsiTwenty, hiddenSearchTerm), "Scan view should ignore stale hidden order search text");
+  const pepsiSingleCan = context.findProduct("01201303");
+  const pepsiTwelvePack = walmart.order.find((item) => item.sku === "Pepsi 12pk");
+  assert(pepsiSingleCan?.sku === "PEP-PEPSI-12OZ-CAN", "UPC-E 01201303 should resolve to Pepsi 12oz single can");
+  assert(context.findProduct("012000000133")?.sku === "PEP-PEPSI-12OZ-CAN", "Expanded UPC-A should resolve to Pepsi 12oz single can");
+  assert(!context.orderItemMatchesScannedProduct(pepsiTwelvePack, pepsiSingleCan.sku), "Single-can barcode must not trigger Pepsi 12pk order line");
   context.orderSearchInput.value = "";
   context.activeViewTarget = ".order-panel";
   context.activeScannedProductSku = "";
