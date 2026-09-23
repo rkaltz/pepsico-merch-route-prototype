@@ -1650,6 +1650,7 @@ function setCameraActive(isActive) {
   cameraScanButton?.classList.toggle("hidden", isActive);
   stopCameraButton?.classList.toggle("hidden", !isActive);
   cameraPreview?.classList.toggle("hidden", !isActive);
+  cameraPreview?.classList.toggle("auto-scanning", isActive);
 }
 
 function applyScannedCode(rawValue) {
@@ -1657,6 +1658,7 @@ function applyScannedCode(rawValue) {
   if (!code || !scanInput) return false;
   scanInput.value = code;
   renderScanResult(findProduct(code), code);
+  if (navigator.vibrate) navigator.vibrate(60);
   return true;
 }
 
@@ -1746,13 +1748,18 @@ function loadZxingBrowser() {
 async function startZxingScan() {
   if (!navigator.mediaDevices?.getUserMedia) throw new Error("Camera access is not available.");
   const zxing = await loadZxingBrowser();
-  if (!zxing?.BrowserMultiFormatReader) throw new Error("ZXing browser scanner did not load.");
-  zxingReader = new zxing.BrowserMultiFormatReader();
-  setCameraStatus("Camera is open. Center the UPC inside the box.");
+  const Reader = zxing?.BrowserMultiFormatOneDReader || zxing?.BrowserMultiFormatReader;
+  if (!Reader) throw new Error("ZXing browser scanner did not load.");
+  zxingReader = new Reader(undefined, {
+    delayBetweenScanAttempts: 120,
+    delayBetweenScanSuccess: 250,
+    tryPlayVideoTimeout: 8000
+  });
+  setCameraStatus("Auto scanning. Center the UPC inside the box and hold steady.");
   zxingControls = await zxingReader.decodeFromVideoDevice(undefined, cameraVideo, (result) => {
     const text = result?.getText ? result.getText() : result?.text;
     if (text && applyScannedCode(text)) {
-      stopCameraScan(`Scanned ${text}. Product lookup updated.`);
+      stopCameraScan(`Auto captured ${text}. Product lookup updated.`);
     }
   });
 }
@@ -1770,7 +1777,7 @@ async function startCameraScan() {
 
   try {
     await startNativeBarcodeDetectorScan();
-    setCameraStatus("Camera is open. Center the UPC inside the box.");
+    setCameraStatus("Auto scanning. Center the UPC inside the box and hold steady.");
   } catch (nativeError) {
     try {
       setCameraStatus("Native scanner unavailable. Loading iPhone camera fallback...");
