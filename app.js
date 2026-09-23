@@ -451,6 +451,7 @@ let cameraDetector = null;
 let zxingControls = null;
 let zxingReader = null;
 let zxingLoadPromise = null;
+let cameraEngine = "";
 const reorderPointOverrides = JSON.parse(localStorage.getItem("reorderPointOverrides") || "{}");
 const storeCatalogOverrides = JSON.parse(localStorage.getItem("storeCatalogOverrides") || "{}");
 const orderItemOverrides = JSON.parse(localStorage.getItem("orderItemOverrides") || "{}");
@@ -1689,6 +1690,7 @@ function stopCameraScan(message = "") {
   }
 
   cameraDetector = null;
+  cameraEngine = "";
   setCameraActive(false);
   if (message) setCameraStatus(message);
 }
@@ -1710,6 +1712,7 @@ async function startNativeBarcodeDetectorScan() {
   if (!window.BarcodeDetector) throw new Error("Native barcode scanner is not available.");
   if (!navigator.mediaDevices?.getUserMedia) throw new Error("Camera access is not available.");
 
+  cameraEngine = "native";
   const formats = await barcodeFormats();
   cameraDetector = new window.BarcodeDetector({ formats });
   cameraStream = await navigator.mediaDevices.getUserMedia({
@@ -1726,7 +1729,7 @@ async function startNativeBarcodeDetectorScan() {
       const matches = await cameraDetector.detect(cameraVideo);
       const code = matches?.[0]?.rawValue;
       if (code && applyScannedCode(code)) {
-        stopCameraScan(`Scanned ${code}. Product lookup updated.`);
+        stopCameraScan(`Auto captured ${code}. Product lookup updated.`);
         return;
       }
     } catch (error) {
@@ -1750,12 +1753,13 @@ async function startZxingScan() {
   const zxing = await loadZxingBrowser();
   const Reader = zxing?.BrowserMultiFormatOneDReader || zxing?.BrowserMultiFormatReader;
   if (!Reader) throw new Error("ZXing browser scanner did not load.");
+  cameraEngine = "zxing";
   zxingReader = new Reader(undefined, {
-    delayBetweenScanAttempts: 120,
+    delayBetweenScanAttempts: 75,
     delayBetweenScanSuccess: 250,
     tryPlayVideoTimeout: 8000
   });
-  setCameraStatus("Auto scanning. Center the UPC inside the box and hold steady.");
+  setCameraStatus("Auto scanning UPC. Fill the box with the barcode and hold steady.");
   zxingControls = await zxingReader.decodeFromVideoDevice(undefined, cameraVideo, (result) => {
     const text = result?.getText ? result.getText() : result?.text;
     if (text && applyScannedCode(text)) {
@@ -1776,13 +1780,15 @@ async function startCameraScan() {
   setCameraStatus("Opening camera...");
 
   try {
-    await startNativeBarcodeDetectorScan();
-    setCameraStatus("Auto scanning. Center the UPC inside the box and hold steady.");
-  } catch (nativeError) {
+    await startZxingScan();
+  } catch (zxingError) {
     try {
-      setCameraStatus("Native scanner unavailable. Loading iPhone camera fallback...");
-      await startZxingScan();
-    } catch (fallbackError) {
+      stopCameraScan();
+      setCameraActive(true);
+      setCameraStatus("Switching scanner engine...");
+      await startNativeBarcodeDetectorScan();
+      setCameraStatus("Auto scanning UPC. Fill the box with the barcode and hold steady.");
+    } catch (nativeError) {
       stopCameraScan("Camera scan is blocked or unavailable. Allow camera access, reopen this page in Safari, or type the UPC.");
     }
   }
