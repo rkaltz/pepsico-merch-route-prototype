@@ -21,8 +21,8 @@ window.PRODUCT_CATALOG = [
     package: "12oz single can",
     salesChannel: "Single can reference",
     ownership: "PepsiCo owned",
-    imageUrl: "",
-    imageStatus: "Needs official single-can product image",
+    imageUrl: "assets/products/pepsi-12oz-can.png",
+    imageStatus: "Prototype photo from field-captured Pepsi 12oz can barcode image",
     dataStatus: "Photo-captured UPC-E 01201303; expanded UPC-A 012000000133 - verify with PepsiCo master data"
   },
   {

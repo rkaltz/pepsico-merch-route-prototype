@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Beverage Order Co-Pilot</title>
-    <link rel="stylesheet" href="styles.css?v=20260923-demo-fix">
+    <link rel="stylesheet" href="styles.css?v=20260923-camera-scan">
   </head>
   <body>
     <div class="app-shell">
@@ -150,6 +150,15 @@
             Scan UPC or enter SKU
             <input id="scanInput" type="search" autocomplete="off" placeholder="Scan barcode or type Pepsi 20oz">
           </label>
+          <div class="camera-scan">
+            <button class="primary-button compact-button" id="cameraScanButton" type="button">Scan with iPhone Camera</button>
+            <button class="secondary-button compact-button hidden" id="stopCameraButton" type="button">Stop camera</button>
+            <span id="cameraScanStatus">Camera scan is a demo fallback; Zebra remains the production scanner.</span>
+          </div>
+          <div class="camera-preview hidden" id="cameraPreview" aria-label="Camera barcode scanner">
+            <video id="cameraVideo" playsinline muted></video>
+            <div class="scan-reticle" aria-hidden="true"></div>
+          </div>
           <div id="scanResult" class="scan-result"></div>
         </section>
 
@@ -231,7 +240,7 @@
 
     </div>
 
-    <script src="product-catalog.js?v=20260923-single-can-upc"></script>
-    <script src="app.js?v=20260923-single-can-upc"></script>
+    <script src="product-catalog.js?v=20260923-camera-scan"></script>
+    <script src="app.js?v=20260923-camera-scan"></script>
   </body>
 </html>

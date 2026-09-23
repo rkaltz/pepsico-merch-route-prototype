@@ -445,6 +445,12 @@ let activeStoreIndex = 0;
 let orderBuilt = false;
 let activeScannedProductSku = "";
 let activeViewTarget = ".order-panel";
+let cameraStream = null;
+let cameraScanLoop = 0;
+let cameraDetector = null;
+let zxingControls = null;
+let zxingReader = null;
+let zxingLoadPromise = null;
 const reorderPointOverrides = JSON.parse(localStorage.getItem("reorderPointOverrides") || "{}");
 const storeCatalogOverrides = JSON.parse(localStorage.getItem("storeCatalogOverrides") || "{}");
 const orderItemOverrides = JSON.parse(localStorage.getItem("orderItemOverrides") || "{}");
@@ -487,6 +493,11 @@ const productCatalog = window.PRODUCT_CATALOG || [];
 const catalogCount = document.querySelector("#catalogCount");
 const scanInput = document.querySelector("#scanInput");
 const scanResult = document.querySelector("#scanResult");
+const cameraScanButton = document.querySelector("#cameraScanButton");
+const stopCameraButton = document.querySelector("#stopCameraButton");
+const cameraScanStatus = document.querySelector("#cameraScanStatus");
+const cameraPreview = document.querySelector("#cameraPreview");
+const cameraVideo = document.querySelector("#cameraVideo");
 const storeCatalogCount = document.querySelector("#storeCatalogCount");
 const storeCatalogList = document.querySelector("#storeCatalogList");
 const catalogAddSelect = document.querySelector("#catalogAddSelect");
@@ -804,6 +815,7 @@ function renderRouteSummary() {
 }
 
 function setActiveStore(index) {
+  stopCameraScan();
   activeStoreIndex = Math.max(0, Math.min(stores.length - 1, index));
   activeScannedProductSku = "";
   if (orderSearchInput) orderSearchInput.value = "";
@@ -1630,6 +1642,157 @@ function renderScanResult(product, query = "") {
   `;
 }
 
+function setCameraStatus(message) {
+  if (cameraScanStatus) cameraScanStatus.textContent = message;
+}
+
+function setCameraActive(isActive) {
+  cameraScanButton?.classList.toggle("hidden", isActive);
+  stopCameraButton?.classList.toggle("hidden", !isActive);
+  cameraPreview?.classList.toggle("hidden", !isActive);
+}
+
+function applyScannedCode(rawValue) {
+  const code = String(rawValue || "").trim();
+  if (!code || !scanInput) return false;
+  scanInput.value = code;
+  renderScanResult(findProduct(code), code);
+  return true;
+}
+
+function stopCameraScan(message = "") {
+  if (cameraScanLoop) {
+    cancelAnimationFrame(cameraScanLoop);
+    cameraScanLoop = 0;
+  }
+
+  if (zxingControls) {
+    if (typeof zxingControls.stop === "function") zxingControls.stop();
+    if (typeof zxingControls.reset === "function") zxingControls.reset();
+    zxingControls = null;
+  }
+
+  if (zxingReader && typeof zxingReader.reset === "function") {
+    zxingReader.reset();
+  }
+
+  if (cameraStream) {
+    cameraStream.getTracks().forEach((track) => track.stop());
+    cameraStream = null;
+  }
+
+  if (cameraVideo) {
+    if (typeof cameraVideo.pause === "function") cameraVideo.pause();
+    cameraVideo.srcObject = null;
+  }
+
+  cameraDetector = null;
+  setCameraActive(false);
+  if (message) setCameraStatus(message);
+}
+
+function scannerRequiresSecureContext() {
+  return window.location.protocol !== "https:" && !["localhost", "127.0.0.1"].includes(window.location.hostname);
+}
+
+function barcodeFormats() {
+  const commonFormats = ["ean_13", "ean_8", "upc_a", "upc_e", "code_128"];
+  if (!window.BarcodeDetector?.getSupportedFormats) return commonFormats;
+  return window.BarcodeDetector.getSupportedFormats()
+    .then((formats) => commonFormats.filter((format) => formats.includes(format)))
+    .then((formats) => formats.length ? formats : commonFormats)
+    .catch(() => commonFormats);
+}
+
+async function startNativeBarcodeDetectorScan() {
+  if (!window.BarcodeDetector) throw new Error("Native barcode scanner is not available.");
+  if (!navigator.mediaDevices?.getUserMedia) throw new Error("Camera access is not available.");
+
+  const formats = await barcodeFormats();
+  cameraDetector = new window.BarcodeDetector({ formats });
+  cameraStream = await navigator.mediaDevices.getUserMedia({
+    video: { facingMode: { ideal: "environment" } },
+    audio: false
+  });
+
+  cameraVideo.srcObject = cameraStream;
+  await cameraVideo.play();
+
+  const scanFrame = async () => {
+    if (!cameraDetector || !cameraVideo?.srcObject) return;
+    try {
+      const matches = await cameraDetector.detect(cameraVideo);
+      const code = matches?.[0]?.rawValue;
+      if (code && applyScannedCode(code)) {
+        stopCameraScan(`Scanned ${code}. Product lookup updated.`);
+        return;
+      }
+    } catch (error) {
+      stopCameraScan("Camera scan stopped. Type the UPC if the browser blocks scanning.");
+      return;
+    }
+    cameraScanLoop = requestAnimationFrame(scanFrame);
+  };
+
+  cameraScanLoop = requestAnimationFrame(scanFrame);
+}
+
+function loadZxingBrowser() {
+  if (window.ZXingBrowser) return Promise.resolve(window.ZXingBrowser);
+  if (zxingLoadPromise) return zxingLoadPromise;
+
+  zxingLoadPromise = new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = "https://unpkg.com/@zxing/browser@latest/umd/index.min.js";
+    script.async = true;
+    script.onload = () => {
+      if (window.ZXingBrowser) resolve(window.ZXingBrowser);
+      else reject(new Error("ZXing browser scanner did not load."));
+    };
+    script.onerror = () => reject(new Error("ZXing browser scanner could not be loaded."));
+    document.head.appendChild(script);
+  });
+
+  return zxingLoadPromise;
+}
+
+async function startZxingScan() {
+  if (!navigator.mediaDevices?.getUserMedia) throw new Error("Camera access is not available.");
+  const zxing = await loadZxingBrowser();
+  zxingReader = new zxing.BrowserMultiFormatReader();
+  setCameraStatus("Camera is open. Center the UPC inside the box.");
+  zxingControls = await zxingReader.decodeFromVideoDevice(undefined, cameraVideo, (result) => {
+    const text = result?.getText ? result.getText() : result?.text;
+    if (text && applyScannedCode(text)) {
+      stopCameraScan(`Scanned ${text}. Product lookup updated.`);
+    }
+  });
+}
+
+async function startCameraScan() {
+  if (!cameraScanButton || !cameraVideo) return;
+  if (scannerRequiresSecureContext()) {
+    setCameraStatus("Camera scanning needs HTTPS. Use the GitHub Pages link on iPhone, or type the UPC here.");
+    return;
+  }
+
+  stopCameraScan();
+  setCameraActive(true);
+  setCameraStatus("Opening camera...");
+
+  try {
+    await startNativeBarcodeDetectorScan();
+    setCameraStatus("Camera is open. Center the UPC inside the box.");
+  } catch (nativeError) {
+    try {
+      setCameraStatus("Native scanner unavailable. Loading iPhone camera fallback...");
+      await startZxingScan();
+    } catch (fallbackError) {
+      stopCameraScan("Camera scan is not available in this browser. Type or paste the UPC to use the same lookup.");
+    }
+  }
+}
+
 function renderCatalog() {
   if (catalogCount) catalogCount.textContent = `${productCatalog.length} SKUs`;
   renderScanResult(null);
@@ -1767,6 +1930,7 @@ function render() {
 }
 
 function setActiveView(target) {
+  if (target !== ".scanner-panel") stopCameraScan();
   activeViewTarget = target;
   document.body.dataset.activeView = viewMap[target] || "route-view";
   const activeView = viewMap[target] || "route-view";
@@ -1832,6 +1996,16 @@ if (scanInput) {
       event.preventDefault();
       renderScanResult(findProduct(scanInput.value), scanInput.value);
     }
+  });
+}
+
+if (cameraScanButton) {
+  cameraScanButton.addEventListener("click", startCameraScan);
+}
+
+if (stopCameraButton) {
+  stopCameraButton.addEventListener("click", () => {
+    stopCameraScan("Camera stopped. Type or scan another UPC when ready.");
   });
 }
 
