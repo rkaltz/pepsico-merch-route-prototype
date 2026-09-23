@@ -435,13 +435,28 @@ body[data-active-view="scan-view"] .scan-actions {
   position: absolute;
   left: 50%;
   top: 50%;
-  width: min(82%, 360px);
-  height: 88px;
+  width: min(90%, 420px);
+  height: 104px;
   border: 2px solid rgba(255, 255, 255, 0.9);
   border-radius: 8px;
   box-shadow: 0 0 0 999px rgba(16, 24, 39, 0.35), inset 0 0 0 1px rgba(0, 92, 185, 0.55);
   transform: translate(-50%, -50%);
   pointer-events: none;
+}
+
+.scan-reticle::before {
+  content: "Center barcode in box";
+  position: absolute;
+  left: 50%;
+  top: -30px;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: 100%;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 900;
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.8);
+  text-transform: uppercase;
 }
 
 .scan-reticle::after {

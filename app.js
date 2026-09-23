@@ -452,6 +452,7 @@ let zxingControls = null;
 let zxingReader = null;
 let zxingLoadPromise = null;
 let zxingModule = null;
+let zbarLoadPromise = null;
 let cameraEngine = "";
 let cameraDecodedValue = "";
 const reorderPointOverrides = JSON.parse(localStorage.getItem("reorderPointOverrides") || "{}");
@@ -1690,11 +1691,29 @@ function cameraUnavailableReason(diag) {
   return "";
 }
 
-function normalizeDecodedBarcode(rawValue = "") {
+function barcodeCheckDigitIsValid(digits) {
+  if (!/^\d+$/.test(digits) || digits.length < 2) return false;
+  const checkDigit = Number(digits.at(-1));
+  const body = digits.slice(0, -1);
+  const sum = body
+    .split("")
+    .reverse()
+    .reduce((total, digit, index) => total + Number(digit) * (index % 2 === 0 ? 3 : 1), 0);
+  return (10 - (sum % 10)) % 10 === checkDigit;
+}
+
+function normalizeDecodedBarcode(rawValue = "", format = "") {
   const text = String(rawValue || "").trim();
   const digits = text.replace(/\D/g, "");
-  if (digits.length === 13 && digits.startsWith("0")) return digits.slice(1);
-  if ([8, 12, 13].includes(digits.length)) return digits;
+  const detectedFormat = String(format || "").toLowerCase();
+  if (digits.length === 13 && digits.startsWith("0") && barcodeCheckDigitIsValid(digits)) {
+    return digits.slice(1);
+  }
+  if (detectedFormat === "upc_a" && digits.length === 12 && barcodeCheckDigitIsValid(digits)) return digits;
+  if (detectedFormat === "ean_13" && digits.length === 13 && barcodeCheckDigitIsValid(digits)) return digits;
+  if (detectedFormat === "upc_e" && digits.length === 8) return digits;
+  if (detectedFormat === "ean_8" && digits.length === 8 && barcodeCheckDigitIsValid(digits)) return digits;
+  if ([8, 12, 13].includes(digits.length) && barcodeCheckDigitIsValid(digits)) return digits;
   return text;
 }
 
@@ -1719,14 +1738,32 @@ function applyScannedCode(rawValue) {
   return handleBarcode(rawValue, "camera");
 }
 
-function handleDecodedBarcode(rawValue, decoder = "unknown") {
+function handleDecodedBarcode(rawValue, decoder = "unknown", format = "") {
   if (cameraDecodedValue) return false;
-  const normalized = normalizeDecodedBarcode(rawValue);
+  const normalized = normalizeDecodedBarcode(rawValue, format);
+  const normalizedFormat = String(format || "").toLowerCase();
+  const rawDigits = String(rawValue || "").replace(/\D/g, "");
+  const validationDigits = normalized.length === 12 ? normalized : rawDigits;
+  const validLength = /^\d{8}$|^\d{12}$|^\d{13}$/.test(normalized);
+  const validChecksum = normalizedFormat === "upc_e" ? normalized.length === 8 : barcodeCheckDigitIsValid(validationDigits);
+  if (!validLength || !validChecksum) {
+    setCameraStatus("Unsupported barcode format");
+    logScannerDebug({
+      decoder,
+      detectedFormat: format || null,
+      rawDecodedValue: rawValue,
+      normalizedUpc: normalized,
+      handleBarcodeResult: false,
+      product: null
+    });
+    return false;
+  }
   const product = findProduct(normalized);
   const handled = handleBarcode(normalized, "camera");
   cameraDecodedValue = normalized;
   logScannerDebug({
     decoder,
+    detectedFormat: format || null,
     rawDecodedValue: rawValue,
     normalizedUpc: normalized,
     handleBarcodeResult: handled,
@@ -1772,24 +1809,36 @@ function scannerRequiresSecureContext() {
   return !cameraDiagnostics().isSecureContext;
 }
 
-function barcodeFormats() {
+function targetBarcodeFormats() {
+  return ["upc_a", "upc_e", "ean_13", "ean_8"];
+}
+
+function barcodeFormats(DetectorClass = window.BarcodeDetector) {
   const commonFormats = ["upc_a", "upc_e", "ean_13", "ean_8"];
-  if (!window.BarcodeDetector?.getSupportedFormats) return commonFormats;
-  return window.BarcodeDetector.getSupportedFormats()
+  if (!DetectorClass?.getSupportedFormats) return Promise.resolve(commonFormats);
+  return DetectorClass.getSupportedFormats()
     .then((formats) => commonFormats.filter((format) => formats.includes(format)))
     .catch(() => []);
 }
 
-async function startNativeBarcodeDetectorScan() {
-  if (!window.BarcodeDetector) throw new Error("Native barcode scanner is not available.");
+function loadZbarBarcodeDetector() {
+  if (zbarLoadPromise) return zbarLoadPromise;
+  zbarLoadPromise = import("https://cdn.jsdelivr.net/npm/@undecaf/barcode-detector-polyfill@0.9.23/dist/main.js")
+    .then((module) => module.BarcodeDetectorPolyfill);
+  return zbarLoadPromise;
+}
+
+async function startZbarWasmScan() {
   if (!window.navigator?.mediaDevices?.getUserMedia) throw new Error("Camera access is not available.");
 
-  const formats = await barcodeFormats();
-  logScannerDebug({ decoder: "BarcodeDetector", supportedBarcodeFormats: formats });
+  const DetectorClass = await loadZbarBarcodeDetector();
+  if (!DetectorClass) throw new Error("ZBar WASM decoder unavailable.");
+  const formats = await barcodeFormats(DetectorClass);
+  logScannerDebug({ decoder: "ZBar WASM", supportedBarcodeFormats: formats });
   if (!formats.length) throw new Error("Unsupported barcode format.");
 
-  cameraEngine = "BarcodeDetector";
-  cameraDetector = new window.BarcodeDetector({ formats });
+  cameraEngine = "ZBar WASM";
+  cameraDetector = new DetectorClass({ formats });
   cameraStream = await window.navigator.mediaDevices.getUserMedia({
     video: {
       facingMode: { ideal: "environment" },
@@ -1805,7 +1854,7 @@ async function startNativeBarcodeDetectorScan() {
   cameraVideo.setAttribute("muted", "true");
   cameraVideo.setAttribute("playsinline", "true");
   await cameraVideo.play();
-  setCameraStatus("Camera ready. Scanning barcode...");
+  setCameraStatus("Decoder: ZBar WASM. Camera ready. Center barcode in box.");
 
   const scanFrame = async () => {
     if (cameraDecodedValue || !cameraDetector || !cameraVideo?.srcObject) return;
@@ -1813,13 +1862,13 @@ async function startNativeBarcodeDetectorScan() {
       const matches = await cameraDetector.detect(cameraVideo);
       const supportedMatch = matches?.find((match) => formats.includes(match.format));
       if (supportedMatch?.rawValue) {
-        handleDecodedBarcode(supportedMatch.rawValue, "BarcodeDetector");
+        handleDecodedBarcode(supportedMatch.rawValue, "ZBar WASM", supportedMatch.format);
         return;
       }
-      setCameraStatus("Scanning barcode...");
+      setCameraStatus("Decoder: ZBar WASM. Scanning barcode...");
     } catch (error) {
       setCameraStatus("Barcode not detected");
-      logScannerDebug({ decoder: "BarcodeDetector", error: error?.message || String(error) });
+      logScannerDebug({ decoder: "ZBar WASM", error: error?.message || String(error) });
       return;
     }
     cameraScanLoop = requestAnimationFrame(scanFrame);
@@ -1857,16 +1906,17 @@ async function startZxingScan() {
     supportedBarcodeFormats: ["UPC_A", "UPC_E", "EAN_13", "EAN_8"]
   });
 
-  setCameraStatus("Camera ready. Scanning barcode...");
+  setCameraStatus("Decoder: ZXing. Camera ready. Center barcode in box.");
   zxingControls = await zxingReader.decodeFromVideoDevice(undefined, cameraVideo, (result, error) => {
     if (cameraDecodedValue) return;
     const rawValue = decodedTextFromResult(result);
     if (rawValue) {
-      handleDecodedBarcode(rawValue, "ZXing");
+      const format = result?.getBarcodeFormat ? String(result.getBarcodeFormat()).toLowerCase() : "";
+      handleDecodedBarcode(rawValue, "ZXing", format);
       return;
     }
     if (error) {
-      setCameraStatus("Scanning barcode...");
+      setCameraStatus("Decoder: ZXing. Scanning barcode...");
     }
   });
 }
@@ -1886,14 +1936,14 @@ async function startCameraScan() {
   setCameraStatus(`Camera starting. ${cameraDiagnosticsText(diag)}`);
 
   try {
-    await startNativeBarcodeDetectorScan();
-  } catch (nativeError) {
+    await startZbarWasmScan();
+  } catch (zbarError) {
     try {
       stopCameraScan();
       cameraDecodedValue = "";
       setCameraActive(true);
-      setCameraStatus("Native barcode decoder unavailable. Loading ZXing fallback...");
-      logScannerDebug({ decoder: "BarcodeDetector", failure: nativeError?.message || String(nativeError) });
+      setCameraStatus("ZBar WASM unavailable. Loading ZXing fallback...");
+      logScannerDebug({ decoder: "ZBar WASM", failure: zbarError?.message || String(zbarError) });
       await startZxingScan();
     } catch (zxingError) {
       logScannerDebug({ decoder: "ZXing", failure: zxingError?.message || String(zxingError) });
