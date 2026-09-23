@@ -1706,9 +1706,10 @@ body[data-active-view="scan-view"] .product-image img {
   position: sticky;
   bottom: 0;
   z-index: 6;
-  display: flex;
-  gap: 7px;
-  overflow-x: auto;
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 4px;
+  overflow-x: hidden;
   overscroll-behavior-x: contain;
   -webkit-overflow-scrolling: touch;
   width: 100%;
@@ -1724,9 +1725,8 @@ body[data-active-view="scan-view"] .product-image img {
 }
 
 .nav-item {
-  flex: 0 0 86px;
   min-height: 48px;
-  min-width: 86px;
+  min-width: 0;
   border: 1px solid transparent;
   border-radius: 8px;
   background: #f8fafc;
@@ -1816,18 +1816,15 @@ body[data-active-view="scan-view"] .product-image img {
   body.zebra-demo .workflow-tabs {
     max-width: none;
     margin: 0;
-    justify-content: flex-start;
   }
 }
 
 @media (max-width: 430px) {
   .workflow-tabs {
-    gap: 4px;
+    padding-inline: 8px;
   }
 
   .nav-item {
-    flex: 1 1 0;
-    min-width: 0;
     font-size: 10px;
     padding: 0 2px;
   }
@@ -1882,7 +1879,6 @@ body[data-active-view="scan-view"] .product-image img {
   .workflow-tabs {
     max-width: 1080px;
     margin: 0 auto;
-    justify-content: center;
   }
 }
 
@@ -1913,13 +1909,10 @@ body[data-active-view="scan-view"] .product-image img {
   body.zebra-demo .workflow-tabs {
     max-width: none;
     margin: 0;
-    justify-content: flex-start;
     gap: 4px;
   }
 
   body.zebra-demo .nav-item {
-    flex: 1 1 0;
-    min-width: 0;
     font-size: 10px;
     padding: 0 2px;
   }

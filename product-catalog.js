@@ -66,16 +66,16 @@ window.PRODUCT_CATALOG = [
   },
   {
     sku: "PEP-PEPSI-20OZ",
-    upcs: ["012000002946"],
+    upcs: ["012000001291", "012000002946"],
     brand: "Pepsi",
     name: "Pepsi 20oz Bottle",
     category: "Cola",
     package: "20oz bottle",
     salesChannel: "Cooler single",
     ownership: "PepsiCo owned",
-    imageUrl: "",
-    imageStatus: "Needs official product image",
-    dataStatus: "UPC seeded from UPCItemDB - verify with PepsiCo master data"
+    imageUrl: "https://smartlabel.pepsico.info/012000001291-0013-en-US/images/b86c05bf-2a5b-4777-bc98-a58b72101625.jpg",
+    imageStatus: "Official SmartLabel product image URL - verify final SKU art with PepsiCo master data",
+    dataStatus: "SmartLabel UPC plus UPCItemDB seed - verify with PepsiCo master data"
   },
   {
     sku: "PEP-MTDEW-12PK-12OZ",

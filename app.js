@@ -7,7 +7,7 @@ const stores = [
     address: "Large format / high-volume",
     account: "Walmart",
     visitType: "Zebra order + displays",
-    dataMode: "Retailer inventory signal",
+    dataMode: "Demo retailer inventory signal",
     confidence: "High confidence",
     risk: "High",
     riskScore: 94,
@@ -59,7 +59,7 @@ const stores = [
     address: "Grocery / DSD heavy",
     account: "Kroger",
     visitType: "Zebra order + cooler check",
-    dataMode: "Supplier activity feed",
+    dataMode: "Demo supplier activity feed",
     confidence: "Medium-high confidence",
     risk: "High",
     riskScore: 88,
@@ -106,7 +106,7 @@ const stores = [
     address: "Supercenter / weekly ad",
     account: "Meijer",
     visitType: "Zebra ad support",
-    dataMode: "VendorNet daily data",
+    dataMode: "Demo VendorNet-style data",
     confidence: "Medium confidence",
     risk: "Medium",
     riskScore: 73,
@@ -150,7 +150,7 @@ const stores = [
     address: "Independent / premium grocery",
     account: "Busch's",
     visitType: "Zebra-assisted manual order",
-    dataMode: "Order history + rep check",
+    dataMode: "Demo order history + rep check",
     confidence: "Low-medium confidence",
     risk: "Medium",
     riskScore: 61,
@@ -192,7 +192,7 @@ const stores = [
     address: "Independent / two-store chain",
     account: "Bueche's",
     visitType: "Relationship stop",
-    dataMode: "Rep notes + history",
+    dataMode: "Demo rep notes + history",
     confidence: "Low confidence",
     risk: "Medium",
     riskScore: 58,
@@ -234,7 +234,7 @@ const stores = [
     address: "Small format / high turns",
     account: "Dollar General",
     visitType: "Quick Zebra order",
-    dataMode: "Sales activity, limited on-hand",
+    dataMode: "Demo sales activity, limited on-hand",
     confidence: "Low-medium confidence",
     risk: "High",
     riskScore: 82,
@@ -277,7 +277,7 @@ const stores = [
     address: "Drug / cooler-heavy",
     account: "CVS",
     visitType: "Zebra cooler order",
-    dataMode: "EDI/portal signals",
+    dataMode: "Demo EDI/portal signals",
     confidence: "Medium confidence",
     risk: "Low",
     riskScore: 46,
@@ -317,7 +317,7 @@ const stores = [
     address: "Grocery / finish stop",
     account: "Kroger",
     visitType: "Light Zebra order",
-    dataMode: "Supplier activity feed",
+    dataMode: "Demo supplier activity feed",
     confidence: "Medium confidence",
     risk: "Low",
     riskScore: 39,
@@ -881,8 +881,8 @@ function renderBrief(store) {
 
 function renderOrder(store) {
   let currentGroup = "";
-  const searchTerm = (orderSearchInput?.value || "").trim().toLowerCase();
   const isScanView = activeViewTarget === ".scanner-panel";
+  const searchTerm = isScanView ? "" : (orderSearchInput?.value || "").trim().toLowerCase();
   const showDateChecks = activeViewTarget === ".order-panel" && !searchTerm && !activeScannedProductSku;
   const useScannedProductFilter = isScanView && activeScannedProductSku;
   const scannedProduct = useScannedProductFilter
@@ -1531,7 +1531,13 @@ function productMatchesStoreItem(product, storeItem) {
   const brand = normalizeSkuName(product.brand);
   const storePackageTokens = packageTokens(normalizeSearchText(storeItem.sku));
   const productPackageText = normalizeSearchText(product.package);
+  const productText = normalizeSearchText([product.name, product.brand, product.package, product.category].filter(Boolean).join(" "));
+  const storeText = normalizeSearchText(storeItem.sku);
   if (storePackageTokens.length && !storePackageTokens.every((token) => productPackageText.includes(token))) return false;
+  if (storePackageTokens.length && !storePackageTokens.every((token) => productText.includes(token))) return false;
+  const storeTokens = storeText.split(/\s+/).filter((token) => !storePackageTokens.includes(token));
+  const importantTokens = storeTokens.filter((token) => token !== brand);
+  if (importantTokens.length && !importantTokens.every((token) => productText.includes(token))) return false;
   return productName.includes(storeSku) || storeSku.includes(productName) || storeSku.includes(brand);
 }
 

@@ -204,6 +204,22 @@ function testOrderingMath(context) {
   delete context.reorderPointOverrides[krogerKey];
 }
 
+function testScanOrderMatch(context) {
+  const walmart = context.stores[0];
+  const pepsiTwenty = walmart.order.find((item) => item.sku === "Pepsi 20oz");
+  const scannedProduct = context.findProduct("pepsi 20oz");
+  assert(scannedProduct?.sku === "PEP-PEPSI-20OZ", "Scan search should resolve Pepsi 20oz product");
+  assert(context.orderItemMatchesScannedProduct(pepsiTwenty, scannedProduct.sku), "Pepsi 20oz scan should match the Walmart order line");
+  context.orderSearchInput.value = "zero";
+  context.activeViewTarget = ".scanner-panel";
+  context.activeScannedProductSku = scannedProduct.sku;
+  const hiddenSearchTerm = context.activeViewTarget === ".scanner-panel" ? "" : context.orderSearchInput.value.trim().toLowerCase();
+  assert(context.orderItemMatchesSearch(pepsiTwenty, hiddenSearchTerm), "Scan view should ignore stale hidden order search text");
+  context.orderSearchInput.value = "";
+  context.activeViewTarget = ".order-panel";
+  context.activeScannedProductSku = "";
+}
+
 function testSmartOrder(context) {
   const walmart = context.stores[0];
   const approvedBefore = walmart.order.filter((item) => item.approved).length;
@@ -249,6 +265,7 @@ function run() {
   testSearch(context);
   testInventory(context);
   testOrderingMath(context);
+  testScanOrderMatch(context);
   testSmartOrder(context);
   testCatalogIsolation(context);
   testStoreSwitchClearsFilters(context);
