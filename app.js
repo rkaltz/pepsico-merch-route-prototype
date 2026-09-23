@@ -1659,13 +1659,53 @@ function setCameraActive(isActive) {
   cameraPreview?.classList.toggle("auto-scanning", isActive);
 }
 
-function applyScannedCode(rawValue) {
+function cameraDiagnostics() {
+  const protocol = window.location.protocol;
+  const hostname = window.location.hostname;
+  const isLocalSecureOrigin = ["localhost", "127.0.0.1", "::1"].includes(hostname);
+  const secureContextState = typeof window.isSecureContext === "boolean" ? String(window.isSecureContext) : "unknown";
+  return {
+    isSecureContext: window.isSecureContext === true || protocol === "https:" || protocol === "file:" || isLocalSecureOrigin,
+    secureContextState,
+    hasMediaDevices: Boolean(window.navigator?.mediaDevices),
+    hasGetUserMedia: typeof window.navigator?.mediaDevices?.getUserMedia === "function",
+    protocol,
+    host: window.location.host
+  };
+}
+
+function cameraDiagnosticsText(diag) {
+  return `Secure=${diag.isSecureContext ? "yes" : "no"} / window.isSecureContext=${diag.secureContextState} / mediaDevices=${diag.hasMediaDevices ? "yes" : "no"} / getUserMedia=${diag.hasGetUserMedia ? "yes" : "no"} / ${diag.protocol}//${diag.host}`;
+}
+
+function cameraUnavailableReason(diag) {
+  if (!diag.isSecureContext) {
+    return `Camera blocked: open the HTTPS GitHub Pages link, not the LAN HTTP address. ${cameraDiagnosticsText(diag)}`;
+  }
+  if (!diag.hasMediaDevices) {
+    return `Camera unavailable: navigator.mediaDevices is missing. ${cameraDiagnosticsText(diag)}`;
+  }
+  if (!diag.hasGetUserMedia) {
+    return `Camera unavailable: getUserMedia is missing. ${cameraDiagnosticsText(diag)}`;
+  }
+  return "";
+}
+
+function handleBarcode(rawValue, source = "manual") {
   const code = String(rawValue || "").trim();
-  if (!code || !scanInput) return false;
+  if (!scanInput) return false;
+  if (!code) {
+    renderScanResult(null);
+    return false;
+  }
   scanInput.value = code;
   renderScanResult(findProduct(code), code);
-  if (navigator.vibrate) navigator.vibrate(60);
+  if (source !== "manual" && navigator.vibrate) navigator.vibrate(60);
   return true;
+}
+
+function applyScannedCode(rawValue) {
+  return handleBarcode(rawValue, "camera");
 }
 
 function stopCameraScan(message = "") {
@@ -1705,7 +1745,7 @@ function stopCameraScan(message = "") {
 }
 
 function scannerRequiresSecureContext() {
-  return window.location.protocol !== "https:" && !["localhost", "127.0.0.1"].includes(window.location.hostname);
+  return !cameraDiagnostics().isSecureContext;
 }
 
 function barcodeFormats() {
@@ -1835,14 +1875,16 @@ async function startZxingScan() {
 
 async function startCameraScan() {
   if (!cameraScanButton || !cameraVideo) return;
-  if (scannerRequiresSecureContext()) {
-    setCameraStatus("Camera scanning needs HTTPS. Use the GitHub Pages link on iPhone, or type the UPC here.");
+  const diag = cameraDiagnostics();
+  const unavailable = cameraUnavailableReason(diag);
+  if (unavailable) {
+    setCameraStatus(unavailable);
     return;
   }
 
   stopCameraScan();
   setCameraActive(true);
-  setCameraStatus("Opening camera...");
+  setCameraStatus(`Camera starting. ${cameraDiagnosticsText(diag)}`);
 
   try {
     await startZxingScan();
@@ -1910,8 +1952,7 @@ function renderStoreCatalog(store) {
 
   storeCatalogList.querySelectorAll("[data-catalog-sku]").forEach((button) => {
     button.addEventListener("click", () => {
-      scanInput.value = button.dataset.catalogSku;
-      renderScanResult(findProduct(scanInput.value), scanInput.value);
+      handleBarcode(button.dataset.catalogSku, "catalog");
     });
   });
 
@@ -2055,12 +2096,12 @@ document.querySelectorAll("[data-return-type]").forEach((button) => {
 
 if (scanInput) {
   scanInput.addEventListener("input", () => {
-    renderScanResult(findProduct(scanInput.value), scanInput.value);
+    handleBarcode(scanInput.value, "manual");
   });
   scanInput.addEventListener("keydown", (event) => {
     if (event.key === "Enter") {
       event.preventDefault();
-      renderScanResult(findProduct(scanInput.value), scanInput.value);
+      handleBarcode(scanInput.value, "manual");
     }
   });
 }
@@ -2083,8 +2124,7 @@ if (stopCameraButton) {
 
 document.querySelectorAll("[data-demo-scan]").forEach((button) => {
   button.addEventListener("click", () => {
-    scanInput.value = button.dataset.demoScan;
-    renderScanResult(findProduct(scanInput.value), scanInput.value);
+    handleBarcode(button.dataset.demoScan, "demo");
   });
 });
 
