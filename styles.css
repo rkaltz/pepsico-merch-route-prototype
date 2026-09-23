@@ -399,7 +399,7 @@ body[data-active-view="scan-view"] .scan-actions {
 
 .camera-scan {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) auto auto;
   gap: 8px;
   align-items: center;
   margin: 9px 0 0;

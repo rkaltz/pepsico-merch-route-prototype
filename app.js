@@ -447,11 +447,14 @@ let activeScannedProductSku = "";
 let activeViewTarget = ".order-panel";
 let cameraStream = null;
 let cameraScanLoop = 0;
+let cameraScanTimer = 0;
 let cameraDetector = null;
 let zxingControls = null;
 let zxingReader = null;
 let zxingLoadPromise = null;
+let zxingModule = null;
 let cameraEngine = "";
+let cameraCanvas = null;
 const reorderPointOverrides = JSON.parse(localStorage.getItem("reorderPointOverrides") || "{}");
 const storeCatalogOverrides = JSON.parse(localStorage.getItem("storeCatalogOverrides") || "{}");
 const orderItemOverrides = JSON.parse(localStorage.getItem("orderItemOverrides") || "{}");
@@ -495,6 +498,7 @@ const catalogCount = document.querySelector("#catalogCount");
 const scanInput = document.querySelector("#scanInput");
 const scanResult = document.querySelector("#scanResult");
 const cameraScanButton = document.querySelector("#cameraScanButton");
+const captureFrameButton = document.querySelector("#captureFrameButton");
 const stopCameraButton = document.querySelector("#stopCameraButton");
 const cameraScanStatus = document.querySelector("#cameraScanStatus");
 const cameraPreview = document.querySelector("#cameraPreview");
@@ -1649,6 +1653,7 @@ function setCameraStatus(message) {
 
 function setCameraActive(isActive) {
   cameraScanButton?.classList.toggle("hidden", isActive);
+  captureFrameButton?.classList.toggle("hidden", !isActive);
   stopCameraButton?.classList.toggle("hidden", !isActive);
   cameraPreview?.classList.toggle("hidden", !isActive);
   cameraPreview?.classList.toggle("auto-scanning", isActive);
@@ -1667,6 +1672,10 @@ function stopCameraScan(message = "") {
   if (cameraScanLoop) {
     cancelAnimationFrame(cameraScanLoop);
     cameraScanLoop = 0;
+  }
+  if (cameraScanTimer) {
+    clearTimeout(cameraScanTimer);
+    cameraScanTimer = 0;
   }
 
   if (zxingControls) {
@@ -1744,8 +1753,47 @@ async function startNativeBarcodeDetectorScan() {
 
 function loadZxingBrowser() {
   if (zxingLoadPromise) return zxingLoadPromise;
-  zxingLoadPromise = import("https://cdn.jsdelivr.net/npm/@zxing/browser@0.2.1/+esm");
+  zxingLoadPromise = import("https://cdn.jsdelivr.net/npm/@zxing/browser@0.2.1/+esm").then((module) => {
+    zxingModule = module;
+    return module;
+  });
   return zxingLoadPromise;
+}
+
+function decodedTextFromResult(result) {
+  return result?.getText ? result.getText() : result?.text || "";
+}
+
+function decodeCurrentCameraFrame(showMiss = false) {
+  if (!zxingReader || !cameraVideo || cameraVideo.readyState < 2) {
+    if (showMiss) setCameraStatus("Camera frame is not ready yet. Hold the barcode steady and try again.");
+    return false;
+  }
+
+  const width = cameraVideo.videoWidth || cameraVideo.clientWidth || 0;
+  const height = cameraVideo.videoHeight || cameraVideo.clientHeight || 0;
+  if (!width || !height) {
+    if (showMiss) setCameraStatus("Camera frame is still loading. Try again in a second.");
+    return false;
+  }
+
+  if (!cameraCanvas) cameraCanvas = document.createElement("canvas");
+  cameraCanvas.width = width;
+  cameraCanvas.height = height;
+  const context = cameraCanvas.getContext("2d", { willReadFrequently: true });
+  if (!context) return false;
+
+  context.drawImage(cameraVideo, 0, 0, width, height);
+  try {
+    const text = decodedTextFromResult(zxingReader.decodeFromCanvas(cameraCanvas));
+    if (text && applyScannedCode(text)) {
+      stopCameraScan(`Captured ${text}. Product lookup updated.`);
+      return true;
+    }
+  } catch (error) {
+    if (showMiss) setCameraStatus("No UPC found in that frame. Fill the box with the barcode and tap Capture frame again.");
+  }
+  return false;
 }
 
 async function startZxingScan() {
@@ -1759,13 +1807,30 @@ async function startZxingScan() {
     delayBetweenScanSuccess: 250,
     tryPlayVideoTimeout: 8000
   });
-  setCameraStatus("Auto scanning UPC. Fill the box with the barcode and hold steady.");
-  zxingControls = await zxingReader.decodeFromVideoDevice(undefined, cameraVideo, (result) => {
-    const text = result?.getText ? result.getText() : result?.text;
-    if (text && applyScannedCode(text)) {
-      stopCameraScan(`Auto captured ${text}. Product lookup updated.`);
-    }
+
+  cameraStream = await navigator.mediaDevices.getUserMedia({
+    video: {
+      facingMode: { ideal: "environment" },
+      width: { ideal: 1280 },
+      height: { ideal: 720 }
+    },
+    audio: false
   });
+  cameraVideo.srcObject = cameraStream;
+  cameraVideo.setAttribute("autoplay", "true");
+  cameraVideo.setAttribute("muted", "true");
+  cameraVideo.setAttribute("playsinline", "true");
+  await cameraVideo.play();
+
+  setCameraStatus("Auto scanning UPC. Fill the box with the barcode. Tap Capture frame if it does not catch.");
+
+  const scanFrame = () => {
+    if (cameraEngine !== "zxing" || !cameraVideo?.srcObject) return;
+    if (!decodeCurrentCameraFrame(false)) {
+      cameraScanTimer = setTimeout(scanFrame, 180);
+    }
+  };
+  scanFrame();
 }
 
 async function startCameraScan() {
@@ -2002,6 +2067,12 @@ if (scanInput) {
 
 if (cameraScanButton) {
   cameraScanButton.addEventListener("click", startCameraScan);
+}
+
+if (captureFrameButton) {
+  captureFrameButton.addEventListener("click", () => {
+    decodeCurrentCameraFrame(true);
+  });
 }
 
 if (stopCameraButton) {
