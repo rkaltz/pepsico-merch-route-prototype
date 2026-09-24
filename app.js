@@ -207,6 +207,7 @@ const displayPlacementInput = document.querySelector("#displayPlacementInput");
 const displayProductInput = document.querySelector("#displayProductInput");
 const displayPriorityInput = document.querySelector("#displayPriorityInput");
 const displayNotesInput = document.querySelector("#displayNotesInput");
+const jumpScanButton = document.querySelector("#jumpScanButton");
 const locationLookupInput = document.querySelector("#locationLookupInput");
 const cameraScanButton = document.querySelector("#cameraScanButton");
 const cameraVideo = document.querySelector("#cameraVideo");
@@ -592,13 +593,20 @@ document.querySelectorAll(".nav-item").forEach((button) => {
     document.querySelectorAll(".nav-item").forEach((item) => item.classList.remove("active"));
     button.classList.add("active");
     const target =
-      button.dataset.view === "map"
+      button.dataset.view === "scan"
+        ? ".scanner-panel"
+        : button.dataset.view === "map"
         ? ".map-panel"
         : button.dataset.view === "verify"
           ? ".current-stop"
           : ".status-strip";
     document.querySelector(target).scrollIntoView({ behavior: "smooth", block: "start" });
   });
+});
+
+jumpScanButton?.addEventListener("click", () => {
+  document.querySelector(".scanner-panel").scrollIntoView({ behavior: "smooth", block: "start" });
+  locationLookupInput?.focus();
 });
 
 if (selectedStoreLabel) {

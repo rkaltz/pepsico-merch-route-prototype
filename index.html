@@ -13,9 +13,12 @@
           <p class="eyebrow">Meijer #57 / Rochester Hills</p>
           <h1>Grocery-Side PepsiCo Map</h1>
         </div>
-        <button class="icon-button" id="resetButton" aria-label="Reset route" title="Reset route">
-          <span aria-hidden="true">R</span>
-        </button>
+        <div class="top-actions">
+          <button class="primary-button header-scan-button" id="jumpScanButton" type="button">Scan</button>
+          <button class="icon-button" id="resetButton" aria-label="Reset route" title="Reset route">
+            <span aria-hidden="true">R</span>
+          </button>
+        </div>
       </header>
 
       <main>
@@ -151,6 +154,7 @@
 
       <nav class="bottom-nav" aria-label="Primary">
         <button class="nav-item active" data-view="route">Route</button>
+        <button class="nav-item" data-view="scan">Scan</button>
         <button class="nav-item" data-view="map">Map</button>
         <button class="nav-item" data-view="verify">Verify</button>
       </nav>
