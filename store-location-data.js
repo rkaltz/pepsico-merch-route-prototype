@@ -25,6 +25,9 @@
       routeStop: "B|4 soda section 4",
       mapTarget: "shelf-map.html#section-4",
       evidence: "Known-good Meijer #57 product page: B|4 / Section 4 / ilcPrimary B-4-4-15.",
+      source: "Meijer product page / browser-observed location data",
+      verificationStatus: "verified",
+      lastVerified: "2026-09-24",
       status: "verified"
     },
     {
@@ -42,6 +45,9 @@
       routeStop: "Checkout coolers / X|32",
       mapTarget: "index.html#storeMap",
       evidence: "Working-map cooler target. Exact Store #57 cooler door still needs field verification.",
+      source: "Working map",
+      verificationStatus: "needs-field-verification",
+      lastVerified: "",
       status: "needs-field-verification"
     },
     {
@@ -59,6 +65,9 @@
       routeStop: "B|4 soda section 2",
       mapTarget: "shelf-map.html#section-2",
       evidence: "Rendered Meijer #57 product-location export placed this row in B|4 / Section 2.",
+      source: "Meijer rendered product-location export",
+      verificationStatus: "verified",
+      lastVerified: "2026-09-24",
       status: "verified"
     },
     {
@@ -76,6 +85,9 @@
       routeStop: "B|4 soda section 4",
       mapTarget: "shelf-map.html#section-4",
       evidence: "Rendered Meijer #57 product-location export placed this row in B|4 / Section 4.",
+      source: "Meijer rendered product-location export",
+      verificationStatus: "verified",
+      lastVerified: "2026-09-24",
       status: "verified"
     },
     {
@@ -93,6 +105,9 @@
       routeStop: "B|4 soda sections 6-14",
       mapTarget: "shelf-map.html#section-8",
       evidence: "Rendered Meijer #57 product-location export placed this row in B|4 / Section 8.",
+      source: "Meijer rendered product-location export",
+      verificationStatus: "verified",
+      lastVerified: "2026-09-24",
       status: "verified"
     },
     {
@@ -110,6 +125,9 @@
       routeStop: "",
       mapTarget: "",
       evidence: "Product identity exists in the PepsiCo beverage catalog; Store #57 shelf location is not mapped yet.",
+      source: "Product catalog seed",
+      verificationStatus: "unknown",
+      lastVerified: "",
       status: "location-not-mapped"
     }
   ];

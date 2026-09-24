@@ -41,6 +41,7 @@ function createElement(selector = "") {
     play() {
       return Promise.resolve();
     },
+    pause() {},
     querySelector() {
       return createElement(`${selector} child`);
     },
@@ -108,6 +109,9 @@ function testKnownStoreLocation(context) {
   assert(anchor.aisle === "B|4", "Known Pepsi anchor should return aisle B|4");
   assert(anchor.section === "4", "Known Pepsi anchor should return Section 4");
   assert(anchor.position === "15", "Known Pepsi anchor should preserve position 15");
+  assert(anchor.source.includes("Meijer"), "Known Pepsi anchor should carry Meijer source provenance");
+  assert(anchor.verificationStatus === "verified", "Known Pepsi anchor should be marked verified");
+  assert(anchor.lastVerified === "2026-09-24", "Known Pepsi anchor should carry last verified date");
   assert(data.locationLabel(anchor) === "B|4 / Section 4 / Position 15", "Known Pepsi anchor label changed");
 }
 
@@ -126,6 +130,22 @@ async function testDecodedBarcodeLocation(context) {
   assert(input.value === "012000002946", "Decoded barcode should write normalized UPC to location lookup input");
   assert(context.__elements.get("#locationResult").innerHTML.includes("Pepsi 20oz Bottle"), "Decoded Pepsi UPC should render Pepsi 20oz location result");
   assert(context.__elements.get("#locationResult").innerHTML.includes("X|32"), "Decoded Pepsi UPC should point to checkout X|32 working-map location");
+  assert(context.__elements.get("#locationResult").innerHTML.includes("Source:"), "Decoded result should show source provenance");
+}
+
+async function testDuplicateScanSuppression(context) {
+  const app = context.MERCH_APP;
+  const first = await app.handleDecodedBarcode("012000809941", "test", "upc_a");
+  const duplicate = await app.handleDecodedBarcode("012000809941", "test", "upc_a");
+  assert(first === "012000809941", "First decoded Store #57 anchor scan should be accepted");
+  assert(duplicate === false, "Immediate duplicate decoded scan should be suppressed");
+  assert(context.__elements.get("#scannerStatus").textContent.includes("Duplicate scan ignored"), "Duplicate scan should report suppression");
+}
+
+function testCameraDiagnostics(context) {
+  const diag = context.MERCH_APP.scannerDiagnostics();
+  assert(diag.isSecureContext, "Local test host should be considered secure for camera diagnostics");
+  assert(diag.hasNativeBarcodeDetector === false, "Node regression context should report no native BarcodeDetector");
 }
 
 function testUnmappedHandling(context) {
@@ -165,6 +185,8 @@ async function run() {
   testKnownStoreLocation(context);
   testScanNormalization(context);
   await testDecodedBarcodeLocation(context);
+  await testDuplicateScanSuppression(context);
+  testCameraDiagnostics(context);
   testUnmappedHandling(context);
   testStoreBoundary(context);
   testNoOrderingWorkflow();

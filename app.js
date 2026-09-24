@@ -210,6 +210,7 @@ const displayNotesInput = document.querySelector("#displayNotesInput");
 const jumpScanButton = document.querySelector("#jumpScanButton");
 const locationLookupInput = document.querySelector("#locationLookupInput");
 const cameraScanButton = document.querySelector("#cameraScanButton");
+const stopCameraButton = document.querySelector("#stopCameraButton");
 const cameraVideo = document.querySelector("#cameraVideo");
 const scannerStatus = document.querySelector("#scannerStatus");
 const locationResult = document.querySelector("#locationResult");
@@ -224,6 +225,14 @@ const storeLocationData = window.STORE_LOCATION_DATA || {
 let currentStoreId = storeLocationData.defaultStoreId;
 let activeScanStream = null;
 let activeScanLoop = 0;
+let cameraDetector = null;
+let zbarLoadPromise = null;
+let zxingLoadPromise = null;
+let zxingReader = null;
+let zxingControls = null;
+let cameraDecodedValue = "";
+let lastDecodedBarcode = "";
+let lastDecodedAt = 0;
 
 function makeDisplayStop(display) {
   return {
@@ -340,7 +349,7 @@ function setActive(index) {
 }
 
 function barcodeCheckDigitIsValid(digits) {
-  if (!/^\d{8}$|^\d{12}$|^\d{13}$/.test(digits)) return false;
+  if (!/^\d+$/.test(digits) || digits.length < 2) return false;
   const body = digits.slice(0, -1);
   const expected = Number(digits.slice(-1));
   const sum = body
@@ -351,6 +360,7 @@ function barcodeCheckDigitIsValid(digits) {
 }
 
 function normalizeDecodedBarcode(rawValue = "", format = "") {
+  const text = String(rawValue || "").trim();
   const digits = String(rawValue || "").replace(/\D/g, "");
   const normalizedFormat = String(format || "").toLowerCase();
 
@@ -358,19 +368,72 @@ function normalizeDecodedBarcode(rawValue = "", format = "") {
     return digits.slice(1);
   }
 
-  if (digits.length === 12 && barcodeCheckDigitIsValid(digits)) {
-    return digits;
-  }
+  if (normalizedFormat === "upc_a" && digits.length === 12 && barcodeCheckDigitIsValid(digits)) return digits;
+  if (normalizedFormat === "ean_13" && digits.length === 13 && barcodeCheckDigitIsValid(digits)) return digits;
+  if (normalizedFormat === "upc_e" && digits.length === 8) return digits;
+  if (normalizedFormat === "ean_8" && digits.length === 8 && barcodeCheckDigitIsValid(digits)) return digits;
+  if ([8, 12, 13].includes(digits.length) && barcodeCheckDigitIsValid(digits)) return digits;
+  return text;
+}
 
-  if (digits.length === 13 && barcodeCheckDigitIsValid(digits)) {
-    return digits;
-  }
+function scannerDiagnostics() {
+  return {
+    isSecureContext: Boolean(window.isSecureContext || location.hostname === "localhost" || location.hostname === "127.0.0.1"),
+    hasMediaDevices: Boolean(navigator.mediaDevices),
+    hasGetUserMedia: Boolean(navigator.mediaDevices?.getUserMedia),
+    hasNativeBarcodeDetector: Boolean(window.BarcodeDetector)
+  };
+}
 
-  if (digits.length === 8 && normalizedFormat.includes("ean")) {
-    return digits;
-  }
+function scannerDiagnosticsText(diag = scannerDiagnostics()) {
+  return `secure=${diag.isSecureContext ? "yes" : "no"}, media=${diag.hasMediaDevices ? "yes" : "no"}, getUserMedia=${diag.hasGetUserMedia ? "yes" : "no"}, native=${diag.hasNativeBarcodeDetector ? "yes" : "no"}`;
+}
 
-  return digits || String(rawValue || "").trim();
+function cameraUnavailableReason(diag = scannerDiagnostics()) {
+  if (!diag.isSecureContext) return `Camera blocked: open the HTTPS GitHub Pages link. ${scannerDiagnosticsText(diag)}`;
+  if (!diag.hasMediaDevices) return `Camera unavailable: mediaDevices missing. ${scannerDiagnosticsText(diag)}`;
+  if (!diag.hasGetUserMedia) return `Camera unavailable: getUserMedia missing. ${scannerDiagnosticsText(diag)}`;
+  return "";
+}
+
+function setCameraActive(isActive) {
+  if (cameraVideo) cameraVideo.hidden = !isActive;
+  if (stopCameraButton) stopCameraButton.hidden = !isActive;
+  if (cameraScanButton) cameraScanButton.disabled = isActive;
+}
+
+function setCameraStatus(message) {
+  if (scannerStatus) scannerStatus.textContent = message;
+}
+
+function targetBarcodeFormats() {
+  return ["upc_a", "upc_e", "ean_13", "ean_8"];
+}
+
+function barcodeFormats(DetectorClass = window.BarcodeDetector) {
+  const commonFormats = targetBarcodeFormats();
+  if (!DetectorClass?.getSupportedFormats) return Promise.resolve(commonFormats);
+  return DetectorClass.getSupportedFormats()
+    .then((formats) => commonFormats.filter((format) => formats.includes(format)))
+    .catch(() => []);
+}
+
+function loadZbarBarcodeDetector() {
+  if (zbarLoadPromise) return zbarLoadPromise;
+  zbarLoadPromise = import("https://cdn.jsdelivr.net/npm/@undecaf/barcode-detector-polyfill@0.9.23/dist/main.js").then(
+    (module) => module.BarcodeDetectorPolyfill
+  );
+  return zbarLoadPromise;
+}
+
+function loadZxingBrowser() {
+  if (zxingLoadPromise) return zxingLoadPromise;
+  zxingLoadPromise = import("https://cdn.jsdelivr.net/npm/@zxing/browser@0.2.1/+esm");
+  return zxingLoadPromise;
+}
+
+function decodedTextFromResult(result) {
+  return result?.getText ? result.getText() : result?.text || "";
 }
 
 function renderLocationResult(location, query = "") {
@@ -394,6 +457,7 @@ function renderLocationResult(location, query = "") {
     <strong>${location.product} - ${location.package}</strong>
     <span class="result-location">${label}</span>
     <span>Route stop: ${location.routeStop || "Pending rep review"}</span>
+    <span>Status: ${location.verificationStatus || location.status || "unknown"} / Source: ${location.source || "unknown"}</span>
     <span>Evidence: ${location.evidence}</span>
     ${mapLink}
   `;
@@ -420,56 +484,146 @@ function stopCameraScan() {
     cancelAnimationFrame(activeScanLoop);
     activeScanLoop = 0;
   }
+  if (zxingControls) {
+    if (typeof zxingControls.stop === "function") zxingControls.stop();
+    if (typeof zxingControls.reset === "function") zxingControls.reset();
+    zxingControls = null;
+  }
+  if (zxingReader && typeof zxingReader.reset === "function") {
+    zxingReader.reset();
+  }
   if (activeScanStream) {
     activeScanStream.getTracks().forEach((track) => track.stop());
     activeScanStream = null;
   }
   if (cameraVideo) {
+    if (typeof cameraVideo.pause === "function") cameraVideo.pause();
     cameraVideo.hidden = true;
     cameraVideo.srcObject = null;
   }
+  cameraDetector = null;
+  setCameraActive(false);
 }
 
 async function handleDecodedBarcode(rawValue, decoder = "camera", format = "") {
   const normalized = normalizeDecodedBarcode(rawValue, format);
+  const normalizedFormat = String(format || "").toLowerCase();
+  const rawDigits = String(rawValue || "").replace(/\D/g, "");
+  const validationDigits = normalized.length === 12 ? normalized : rawDigits;
+  const validLength = /^\d{8}$|^\d{12}$|^\d{13}$/.test(normalized);
+  const validChecksum = normalizedFormat === "upc_e" ? normalized.length === 8 : barcodeCheckDigitIsValid(validationDigits);
+  const now = Date.now();
+
+  if (!validLength || !validChecksum) {
+    setCameraStatus("Unsupported barcode format.");
+    return false;
+  }
+
+  if (normalized === lastDecodedBarcode && now - lastDecodedAt < 1500) {
+    setCameraStatus(`Duplicate scan ignored: ${normalized}`);
+    return false;
+  }
+
+  lastDecodedBarcode = normalized;
+  lastDecodedAt = now;
+  cameraDecodedValue = normalized;
   locationLookupInput.value = normalized;
-  scannerStatus.textContent = `Scanned ${normalized} with ${decoder}.`;
-  lookupStoreProduct(normalized);
+  const location = lookupStoreProduct(normalized);
+  const label = storeLocationData.locationLabel(location);
+  setCameraStatus(location ? `Decoded with ${decoder}: ${normalized}. ${label}` : `Decoded with ${decoder}: ${normalized}. Location not mapped.`);
+  if (navigator.vibrate) navigator.vibrate(60);
   stopCameraScan();
   return normalized;
 }
 
-async function startCameraScan() {
-  if (!window.isSecureContext && location.hostname !== "localhost" && location.hostname !== "127.0.0.1") {
-    scannerStatus.textContent = "Camera scan needs HTTPS. Use the GitHub Pages link on iPhone.";
-    return false;
-  }
-  if (!navigator.mediaDevices?.getUserMedia || !window.BarcodeDetector) {
-    scannerStatus.textContent = "Camera scanner is not available in this browser. Manual UPC lookup still works.";
-    return false;
-  }
-
-  stopCameraScan();
-  const detector = new BarcodeDetector({ formats: ["upc_a", "ean_13", "ean_8"] });
+async function startZbarWasmScan() {
+  const DetectorClass = await loadZbarBarcodeDetector();
+  if (!DetectorClass) throw new Error("ZBar WASM decoder unavailable.");
+  const formats = await barcodeFormats(DetectorClass);
+  if (!formats.length) throw new Error("Unsupported barcode format.");
+  cameraDetector = new DetectorClass({ formats });
   activeScanStream = await navigator.mediaDevices.getUserMedia({
-    video: { facingMode: { ideal: "environment" } },
+    video: {
+      facingMode: { ideal: "environment" },
+      width: { ideal: 1280 },
+      height: { ideal: 720 },
+      focusMode: { ideal: "continuous" }
+    },
     audio: false
   });
   cameraVideo.srcObject = activeScanStream;
-  cameraVideo.hidden = false;
+  cameraVideo.setAttribute("autoplay", "true");
+  cameraVideo.setAttribute("muted", "true");
+  cameraVideo.setAttribute("playsinline", "true");
   await cameraVideo.play();
-  scannerStatus.textContent = "Point the camera at the barcode.";
+  setCameraStatus("Decoder: ZBar WASM. Center barcode in box.");
 
   async function scanFrame() {
-    const codes = await detector.detect(cameraVideo).catch(() => []);
-    if (codes.length) {
-      await handleDecodedBarcode(codes[0].rawValue, "BarcodeDetector", codes[0].format);
+    if (cameraDecodedValue || !cameraDetector || !cameraVideo?.srcObject) return;
+    const codes = await cameraDetector.detect(cameraVideo).catch(() => []);
+    const supportedCode = codes.find((code) => formats.includes(code.format));
+    if (supportedCode?.rawValue) {
+      await handleDecodedBarcode(supportedCode.rawValue, "ZBar WASM", supportedCode.format);
       return;
     }
+    setCameraStatus("Decoder: ZBar WASM. Scanning barcode...");
     activeScanLoop = requestAnimationFrame(scanFrame);
   }
 
   activeScanLoop = requestAnimationFrame(scanFrame);
+}
+
+async function startZxingScan() {
+  const zxing = await loadZxingBrowser();
+  const Reader = zxing?.BrowserMultiFormatOneDReader || zxing?.BrowserMultiFormatReader;
+  if (!Reader) throw new Error("ZXing browser scanner did not load.");
+  zxingReader = new Reader(undefined, {
+    delayBetweenScanAttempts: 75,
+    delayBetweenScanSuccess: 250,
+    tryPlayVideoTimeout: 8000
+  });
+  setCameraStatus("Decoder: ZXing. Center barcode in box.");
+  zxingControls = await zxingReader.decodeFromVideoDevice(undefined, cameraVideo, (result, error) => {
+    if (cameraDecodedValue) return;
+    const rawValue = decodedTextFromResult(result);
+    if (rawValue) {
+      const format = result?.getBarcodeFormat ? String(result.getBarcodeFormat()).toLowerCase() : "";
+      handleDecodedBarcode(rawValue, "ZXing", format);
+      return;
+    }
+    if (error) setCameraStatus("Decoder: ZXing. Scanning barcode...");
+  });
+}
+
+async function startCameraScan() {
+  const diag = scannerDiagnostics();
+  const unavailable = cameraUnavailableReason(diag);
+  if (unavailable) {
+    setCameraStatus(unavailable);
+    return false;
+  }
+
+  stopCameraScan();
+  cameraDecodedValue = "";
+  setCameraActive(true);
+  setCameraStatus(`Camera starting. ${scannerDiagnosticsText(diag)}`);
+
+  try {
+    await startZbarWasmScan();
+  } catch (zbarError) {
+    try {
+      stopCameraScan();
+      cameraDecodedValue = "";
+      setCameraActive(true);
+      setCameraStatus("ZBar WASM unavailable. Loading ZXing fallback...");
+      await startZxingScan();
+    } catch (zxingError) {
+      stopCameraScan();
+      setCameraStatus(`Decoder unavailable. Type the UPC manually. ${zxingError.message || zbarError.message || ""}`.trim());
+      return false;
+    }
+  }
+
   return true;
 }
 
@@ -632,15 +786,22 @@ cameraScanButton?.addEventListener("click", () => {
   });
 });
 
+stopCameraButton?.addEventListener("click", () => {
+  stopCameraScan();
+  setCameraStatus("Camera stopped. Type or scan another UPC when ready.");
+});
+
 window.MERCH_APP = {
   route,
   setActive,
   barcodeCheckDigitIsValid,
   normalizeDecodedBarcode,
+  scannerDiagnostics,
   lookupStoreProduct,
   handleDecodedBarcode,
   renderLocationResult,
   stopCameraScan,
+  startCameraScan,
   get currentStoreId() {
     return currentStoreId;
   },

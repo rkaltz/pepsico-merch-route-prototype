@@ -189,7 +189,7 @@ main {
 
 .scan-row {
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: 1fr auto auto;
   gap: 8px;
   margin-top: 12px;
 }
