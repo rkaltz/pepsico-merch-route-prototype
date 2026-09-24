@@ -319,23 +319,62 @@ main {
 }
 
 .aisle {
-  width: 60px;
-  height: 170px;
+  width: 82px;
+  min-height: 154px;
   display: grid;
   place-items: center;
+  text-align: center;
   top: 92px;
+  line-height: 1.2;
 }
 
-.aisle-2 {
-  left: 18%;
+.aisle span {
+  display: block;
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.2;
 }
 
-.aisle-3 {
-  left: 41%;
+.deli-zone {
+  top: 84px;
+  left: 12px;
+  width: 90px;
+  text-align: center;
+  background: #fff8eb;
+  border-color: #f6c36a;
 }
 
-.aisle-5 {
-  left: 64%;
+.produce-zone {
+  top: 142px;
+  left: 12px;
+  width: 90px;
+  text-align: center;
+}
+
+.aisle-b4 {
+  left: 35%;
+  width: 118px;
+  height: 188px;
+  background: #ecfdf5;
+  border-color: #9ed8c4;
+}
+
+.aisle-x32 {
+  top: 47px;
+  right: 16px;
+  width: 116px;
+  min-height: 64px;
+  background: #e8f3ff;
+  border-color: #a9c9ec;
+}
+
+.aisle-g27 {
+  left: auto;
+  right: 16px;
+  top: 130px;
+  width: 100px;
+  min-height: 104px;
 }
 
 .route-line {

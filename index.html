@@ -10,8 +10,8 @@
     <div class="app-shell">
       <header class="topbar">
         <div>
-          <p class="eyebrow">Kroger Grand Blanc</p>
-          <h1>PepsiCo Beverage Route</h1>
+          <p class="eyebrow">Meijer #57 / Rochester Hills</p>
+          <h1>Grocery-Side PepsiCo Map</h1>
         </div>
         <button class="icon-button" id="resetButton" aria-label="Reset route" title="Reset route">
           <span aria-hidden="true">R</span>
@@ -47,7 +47,7 @@
             <p class="eyebrow">Manager note</p>
             <h2>Core hit only for new merchandisers</h2>
           </div>
-          <p>Prioritize front coolers, ad displays, Aisle 5 fast movers, Gatorade, and energy. Skip full aisle detail unless the store is visibly empty.</p>
+          <p>Prioritize checkout coolers, lobby/ad displays, the deli chicken rack, and verified B|4 soda sections. Use the map as the base route; add rep-sold displays when the route owner confirms them.</p>
         </section>
 
         <section class="sold-displays" aria-label="Sold displays">
@@ -66,17 +66,19 @@
           <div class="map-head">
             <div>
               <h2>Interactive Map</h2>
-              <p>Tap a stop to focus the route. Work front to back and finish near receiving.</p>
+              <p>Tap a stop to focus the route. This is a grocery-side working map, not a Meijer blueprint.</p>
             </div>
             <span id="completeCount">0 / 6</span>
           </div>
 
           <div class="store-map" id="storeMap">
-            <div class="zone front">Front doors / registers</div>
-            <div class="aisle aisle-2">Aisle 2</div>
-            <div class="aisle aisle-3">Aisle 3</div>
-            <div class="aisle aisle-5">Aisle 5</div>
-            <div class="zone receiving">Back wall receiving</div>
+            <div class="zone front">Front doors / checkout coolers</div>
+            <div class="zone deli-zone">Deli / chicken rack</div>
+            <div class="zone produce-zone">Fresh / produce side</div>
+            <div class="aisle aisle-b4">B|4 main soda<br><span>Sections 2, 4, 6, 8, 12, 14</span></div>
+            <div class="aisle aisle-x32">X|32 checkout queue<br><span>Cooler/impulse</span></div>
+            <div class="aisle aisle-g27">G|27 grocery side<br><span>1 verified Pepsi row</span></div>
+            <div class="zone receiving">Back wall / receiving / backstock</div>
             <svg class="route-line" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
               <polyline id="routePath" points=""></polyline>
             </svg>
@@ -84,11 +86,11 @@
           <div class="map-guide">
             <h3>How to work this store</h3>
             <ol>
-              <li><strong>Start front:</strong> fill register coolers before any aisle work.</li>
+              <li><strong>Start front:</strong> fill checkout coolers and queue singles before any aisle work.</li>
               <li><strong>Clear front displays:</strong> lobby, seasonal, and ad stacks while you are already up front.</li>
-              <li><strong>Check deli:</strong> find rotisserie chicken and service the 7.5 oz mini-can rack.</li>
-              <li><strong>Move left-to-right through beverage sets:</strong> Aisle 2, Aisle 3, then Aisle 5.</li>
-              <li><strong>Do heavy pack work first:</strong> cubes, 24 packs, 12 packs, then 2 liters and small formats.</li>
+              <li><strong>Check deli:</strong> find rotisserie chicken and service the mini-can chicken-rack display if present.</li>
+              <li><strong>Work B|4 by section:</strong> sections 2 and 4 first, then 6, 8, 12, and 14.</li>
+              <li><strong>Do heavy pack work first:</strong> 24 packs/cubes, 12 packs, mini cans, 2 liters, then small formats.</li>
               <li><strong>Finish back:</strong> overstock, credits, cardboard, and route-owner notes near receiving.</li>
             </ol>
           </div>

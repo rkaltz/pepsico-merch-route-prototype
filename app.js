@@ -1,23 +1,23 @@
 const route = [
   {
-    name: "Front register coolers",
+    name: "Checkout coolers / X|32",
     minutes: 20,
     type: "Register cooler",
-    aisle: "Front",
-    section: "Front",
+    aisle: "X|32",
+    section: "Checkout queue",
     priority: "High",
-    verified: true,
-    x: 48,
+    verified: false,
+    x: 52,
     y: 13,
     description:
-      "Start here. Work the full checkout cooler line from one end to the other before leaving the front.",
+      "Start here. Meijer data found Pepsi-family hits in X|32, so treat the checkout queue as a must-check cooler/impulse zone until a rep verifies each door.",
     products: ["Pepsi singles", "Dew singles", "Aquafina", "Gatorade", "Energy"],
     sequence: [
-      "Face and rotate each cooler door before opening new cases.",
+      "Walk the full checkout line from one end to the other.",
       "Stock 20 oz Pepsi family and Mountain Dew first.",
       "Fill water and sports drink singles next.",
       "Fill energy, tea, coffee, and functional singles last.",
-      "Core hit: leave this stop full before doing anything else."
+      "Record cooler door numbers once this store is field-verified."
     ]
   },
   {
@@ -63,66 +63,87 @@ const route = [
     ]
   },
   {
-    name: "Aisle 2 beverages",
-    minutes: 15,
+    name: "B|4 soda section 2",
+    minutes: 18,
     type: "Main aisle",
-    aisle: "2",
-    section: "Middle",
-    priority: "Medium",
-    verified: true,
-    x: 26,
-    y: 48,
-    description:
-      "First aisle stop after the front. Work water, hydration, tea, and coffee before moving to energy.",
-    products: ["Aquafina", "Propel", "Pure Leaf", "Starbucks RTD"],
-    sequence: [
-      "Stock bulk water first because it is the heaviest and clears cart space.",
-      "Fill Propel and hydration multipacks next.",
-      "Fill tea and coffee multipacks or shelf sets.",
-      "Top off singles or small packs last.",
-      "Core hit: only fill obvious holes unless this is a delivery visit."
-    ]
-  },
-  {
-    name: "Aisle 3 energy",
-    minutes: 10,
-    type: "Main aisle",
-    aisle: "3",
-    section: "Middle",
-    priority: "Medium",
-    verified: false,
-    x: 48,
-    y: 52,
-    description:
-      "Second aisle stop. Work the energy set, then continue toward the main soda aisle.",
-    products: ["Celsius", "Alani Nu", "Rockstar"],
-    sequence: [
-      "Verify Celsius and Alani Nu location before opening cases.",
-      "Stock fastest movers and sale flavors first.",
-      "Fill Rockstar and other confirmed Pepsi-route energy slots.",
-      "Face cans by brand block after stocking.",
-      "Core hit: fill visible energy holes and record changed placements."
-    ]
-  },
-  {
-    name: "Aisle 5 main soda",
-    minutes: 55,
-    type: "Main aisle",
-    aisle: "5",
-    section: "Back",
+    aisle: "B|4",
+    section: "2",
     priority: "High",
     verified: true,
-    x: 72,
+    x: 28,
+    y: 48,
+    description:
+      "First verified B|4 aisle section. The first export found multiple Pepsi-family packages here, including 24 packs.",
+    products: ["Pepsi 24 packs", "Pepsi family multipacks", "Large packs"],
+    sequence: [
+      "Start with 24 packs and cubes to clear the heaviest product.",
+      "Fill 12 packs only after the larger cases are out of the way.",
+      "Face each Pepsi block before moving sections.",
+      "Watch for secondary stacks tied to the same ad.",
+      "Core hit: fill obvious large-pack holes first."
+    ]
+  },
+  {
+    name: "B|4 soda section 4",
+    minutes: 22,
+    type: "Main aisle",
+    aisle: "B|4",
+    section: "4",
+    priority: "High",
+    verified: true,
+    x: 45,
+    y: 55,
+    description:
+      "Known-good validation stop: Pepsi 12 oz 12-pack renders at B|4, Section 4 for Meijer #57.",
+    products: ["Pepsi 12 packs", "Pepsi 12 oz cans", "Ad 12 packs"],
+    sequence: [
+      "Fill Pepsi Original 12-pack first as the validation anchor.",
+      "Work adjacent Pepsi flavors in the same section.",
+      "Keep 12-pack cases grouped by flavor block.",
+      "Face the section before opening smaller packages.",
+      "Core hit: this section must be checked even on a short day."
+    ]
+  },
+  {
+    name: "B|4 soda sections 6-14",
+    minutes: 38,
+    type: "Main aisle",
+    aisle: "B|4",
+    section: "6, 8, 12, 14",
+    priority: "High",
+    verified: true,
+    x: 70,
     y: 62,
     description:
-      "Main heavy-work stop. Clear bulky packs first, then finish 2 liters and smaller formats.",
-    products: ["Pepsi family", "Mountain Dew", "Starry", "Mug", "Crush", "Gatorade packs"],
+      "Continue down the verified B|4 soda aisle. The first export found Pepsi-family products across sections 6, 8, 12, and 14.",
+    products: ["Pepsi family", "Mountain Dew candidates", "Starry/Mug/Crush candidates", "2 liters"],
     sequence: [
-      "Start with cubes, 24 packs, and floor-stack items to clear pallet bulk.",
-      "Stock 12 packs and mini cans by brand block: Pepsi, Dew, then flavors.",
+      "Work sections in order: 6, 8, 12, then 14.",
+      "Stock 12 packs and mini cans by brand block before 2 liters.",
       "Stock 2 liters next, working bottom shelves before upper shelves.",
       "Fill 6 packs, 8 packs, and small-format items after the heavy cases.",
-      "Core hit: focus Pepsi, Dew, ad items, Gatorade, and major visible holes."
+      "Record exact Mountain Dew, Starry, Mug, and Crush placements as they are verified."
+    ]
+  },
+  {
+    name: "Grocery-side odd location G|27",
+    minutes: 6,
+    type: "Main aisle",
+    aisle: "G|27",
+    section: "1",
+    priority: "Medium",
+    verified: true,
+    x: 83,
+    y: 42,
+    description:
+      "One first-pass Pepsi row appeared outside the main B|4 cluster at G|27, Section 1. Treat this as a check-only stop until product group is confirmed.",
+    products: ["Pepsi-family outlier", "Possible display or alternate grocery shelf"],
+    sequence: [
+      "Go only after the main B|4 work unless the route owner says otherwise.",
+      "Check whether this is a real permanent shelf, temporary display, or data artifact.",
+      "Fill only visible PepsiCo product assigned to the route.",
+      "Add a note if the location does not exist in the store.",
+      "Do not waste time hunting if this is a core-hit day."
     ]
   },
   {
@@ -136,7 +157,7 @@ const route = [
     x: 53,
     y: 87,
     description:
-      "End here near the back wall. Handle overstock, credits, cardboard, and notes without crossing the store again.",
+      "End here near the back wall. Handle overstock, credits, cardboard, and Store #57 notes without crossing the grocery side again.",
     products: ["Overstock", "Credits", "Cardboard", "Pallet wrap"],
     sequence: [
       "Separate sellable overstock from credits and damages.",
