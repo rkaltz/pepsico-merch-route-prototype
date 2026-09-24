@@ -129,6 +129,7 @@ main {
 .mode-panel,
 .manager-note,
 .sold-displays,
+.scanner-panel,
 .map-panel,
 .current-stop,
 .route-list {
@@ -166,6 +167,74 @@ main {
   color: var(--muted);
   font-size: 14px;
   line-height: 1.4;
+}
+
+.scanner-panel p {
+  margin: 10px 0 0;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.scan-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.camera-video {
+  width: 100%;
+  margin-top: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #101828;
+}
+
+.scanner-status {
+  min-height: 18px;
+}
+
+.location-result {
+  display: grid;
+  gap: 6px;
+  margin-top: 10px;
+  border: 1px solid #cfd8e6;
+  border-radius: 8px;
+  background: #fbfdff;
+  padding: 10px;
+}
+
+.location-result strong {
+  font-size: 15px;
+  line-height: 1.25;
+}
+
+.location-result span {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.location-result .result-location {
+  color: var(--ink);
+  font-size: 18px;
+  font-weight: 900;
+}
+
+.location-result.mapped {
+  border-color: #9ed8c4;
+  background: #ecfdf5;
+}
+
+.location-result.unmapped {
+  border-color: #f6c36a;
+  background: #fff8eb;
+}
+
+.result-map-link {
+  margin-top: 2px;
+  text-decoration: none;
 }
 
 .compact-button {
@@ -852,7 +921,8 @@ textarea {
   .status-strip,
   .mode-panel,
   .manager-note,
-  .sold-displays {
+  .sold-displays,
+  .scanner-panel {
     grid-column: 1 / -1;
   }
 

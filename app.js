@@ -207,6 +207,22 @@ const displayPlacementInput = document.querySelector("#displayPlacementInput");
 const displayProductInput = document.querySelector("#displayProductInput");
 const displayPriorityInput = document.querySelector("#displayPriorityInput");
 const displayNotesInput = document.querySelector("#displayNotesInput");
+const locationLookupInput = document.querySelector("#locationLookupInput");
+const cameraScanButton = document.querySelector("#cameraScanButton");
+const cameraVideo = document.querySelector("#cameraVideo");
+const scannerStatus = document.querySelector("#scannerStatus");
+const locationResult = document.querySelector("#locationResult");
+const selectedStoreLabel = document.querySelector("#selectedStoreLabel");
+const storeLocationData = window.STORE_LOCATION_DATA || {
+  stores: [],
+  locations: [],
+  defaultStoreId: "meijer-57",
+  findStoreLocation: () => null,
+  locationLabel: () => "LOCATION NOT MAPPED"
+};
+let currentStoreId = storeLocationData.defaultStoreId;
+let activeScanStream = null;
+let activeScanLoop = 0;
 
 function makeDisplayStop(display) {
   return {
@@ -320,6 +336,140 @@ function render() {
 function setActive(index) {
   activeIndex = Math.max(0, Math.min(route.length - 1, index));
   render();
+}
+
+function barcodeCheckDigitIsValid(digits) {
+  if (!/^\d{8}$|^\d{12}$|^\d{13}$/.test(digits)) return false;
+  const body = digits.slice(0, -1);
+  const expected = Number(digits.slice(-1));
+  const sum = body
+    .split("")
+    .reverse()
+    .reduce((total, char, index) => total + Number(char) * (index % 2 === 0 ? 3 : 1), 0);
+  return (10 - (sum % 10)) % 10 === expected;
+}
+
+function normalizeDecodedBarcode(rawValue = "", format = "") {
+  const digits = String(rawValue || "").replace(/\D/g, "");
+  const normalizedFormat = String(format || "").toLowerCase();
+
+  if (digits.length === 13 && digits.startsWith("0") && barcodeCheckDigitIsValid(digits)) {
+    return digits.slice(1);
+  }
+
+  if (digits.length === 12 && barcodeCheckDigitIsValid(digits)) {
+    return digits;
+  }
+
+  if (digits.length === 13 && barcodeCheckDigitIsValid(digits)) {
+    return digits;
+  }
+
+  if (digits.length === 8 && normalizedFormat.includes("ean")) {
+    return digits;
+  }
+
+  return digits || String(rawValue || "").trim();
+}
+
+function renderLocationResult(location, query = "") {
+  if (!location) {
+    locationResult.className = "location-result unmapped";
+    locationResult.innerHTML = `
+      <strong>LOCATION NOT MAPPED</strong>
+      <span>No Store #57 shelf location matched "${query || "that scan"}". Add it to pending rep verification before treating it as a route stop.</span>
+    `;
+    scannerStatus.textContent = "No mapped location found.";
+    return;
+  }
+
+  const label = storeLocationData.locationLabel(location);
+  const isMapped = label !== "LOCATION NOT MAPPED";
+  locationResult.className = `location-result ${isMapped ? "mapped" : "unmapped"}`;
+  const mapLink = location.mapTarget
+    ? `<a class="secondary-button compact-button result-map-link" href="${location.mapTarget}">Show on map</a>`
+    : "";
+  locationResult.innerHTML = `
+    <strong>${location.product} - ${location.package}</strong>
+    <span class="result-location">${label}</span>
+    <span>Route stop: ${location.routeStop || "Pending rep review"}</span>
+    <span>Evidence: ${location.evidence}</span>
+    ${mapLink}
+  `;
+  scannerStatus.textContent = isMapped ? "Mapped location found." : "Product found; location still needs mapping.";
+}
+
+function lookupStoreProduct(rawQuery) {
+  const query = String(rawQuery || "").trim();
+  if (!query) {
+    renderLocationResult(null, "");
+    scannerStatus.textContent = "Enter a UPC, Meijer item ID, or product name.";
+    return null;
+  }
+  const digits = query.replace(/\D/g, "");
+  const shouldUseBarcodeKey = digits.length >= 8 && digits.length === query.replace(/\s/g, "").length;
+  const normalized = shouldUseBarcodeKey ? normalizeDecodedBarcode(query) : query;
+  const location = storeLocationData.findStoreLocation(currentStoreId, normalized) || storeLocationData.findStoreLocation(currentStoreId, query);
+  renderLocationResult(location, query);
+  return location;
+}
+
+function stopCameraScan() {
+  if (activeScanLoop) {
+    cancelAnimationFrame(activeScanLoop);
+    activeScanLoop = 0;
+  }
+  if (activeScanStream) {
+    activeScanStream.getTracks().forEach((track) => track.stop());
+    activeScanStream = null;
+  }
+  if (cameraVideo) {
+    cameraVideo.hidden = true;
+    cameraVideo.srcObject = null;
+  }
+}
+
+async function handleDecodedBarcode(rawValue, decoder = "camera", format = "") {
+  const normalized = normalizeDecodedBarcode(rawValue, format);
+  locationLookupInput.value = normalized;
+  scannerStatus.textContent = `Scanned ${normalized} with ${decoder}.`;
+  lookupStoreProduct(normalized);
+  stopCameraScan();
+  return normalized;
+}
+
+async function startCameraScan() {
+  if (!window.isSecureContext && location.hostname !== "localhost" && location.hostname !== "127.0.0.1") {
+    scannerStatus.textContent = "Camera scan needs HTTPS. Use the GitHub Pages link on iPhone.";
+    return false;
+  }
+  if (!navigator.mediaDevices?.getUserMedia || !window.BarcodeDetector) {
+    scannerStatus.textContent = "Camera scanner is not available in this browser. Manual UPC lookup still works.";
+    return false;
+  }
+
+  stopCameraScan();
+  const detector = new BarcodeDetector({ formats: ["upc_a", "ean_13", "ean_8"] });
+  activeScanStream = await navigator.mediaDevices.getUserMedia({
+    video: { facingMode: { ideal: "environment" } },
+    audio: false
+  });
+  cameraVideo.srcObject = activeScanStream;
+  cameraVideo.hidden = false;
+  await cameraVideo.play();
+  scannerStatus.textContent = "Point the camera at the barcode.";
+
+  async function scanFrame() {
+    const codes = await detector.detect(cameraVideo).catch(() => []);
+    if (codes.length) {
+      await handleDecodedBarcode(codes[0].rawValue, "BarcodeDetector", codes[0].format);
+      return;
+    }
+    activeScanLoop = requestAnimationFrame(scanFrame);
+  }
+
+  activeScanLoop = requestAnimationFrame(scanFrame);
+  return true;
 }
 
 function moveStop(index, direction) {
@@ -450,5 +600,45 @@ document.querySelectorAll(".nav-item").forEach((button) => {
     document.querySelector(target).scrollIntoView({ behavior: "smooth", block: "start" });
   });
 });
+
+if (selectedStoreLabel) {
+  const selectedStore = storeLocationData.stores.find((store) => store.id === currentStoreId);
+  selectedStoreLabel.textContent = selectedStore?.name || "Selected store";
+}
+
+locationLookupInput?.addEventListener("input", () => {
+  lookupStoreProduct(locationLookupInput.value);
+});
+
+locationLookupInput?.addEventListener("keydown", (event) => {
+  if (event.key === "Enter") {
+    event.preventDefault();
+    lookupStoreProduct(locationLookupInput.value);
+  }
+});
+
+cameraScanButton?.addEventListener("click", () => {
+  startCameraScan().catch((error) => {
+    scannerStatus.textContent = `Camera scan failed: ${error.message}`;
+    stopCameraScan();
+  });
+});
+
+window.MERCH_APP = {
+  route,
+  setActive,
+  barcodeCheckDigitIsValid,
+  normalizeDecodedBarcode,
+  lookupStoreProduct,
+  handleDecodedBarcode,
+  renderLocationResult,
+  stopCameraScan,
+  get currentStoreId() {
+    return currentStoreId;
+  },
+  set currentStoreId(value) {
+    currentStoreId = value;
+  }
+};
 
 render();
