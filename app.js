@@ -178,6 +178,7 @@ const routeList = document.querySelector("#routeList");
 const storeMap = document.querySelector("#storeMap");
 const routePath = document.querySelector("#routePath");
 const productChips = document.querySelector("#productChips");
+const currentStopPanel = document.querySelector(".current-stop");
 const sequenceList = document.querySelector("#sequenceList");
 const stopMeta = document.querySelector("#stopMeta");
 const stopName = document.querySelector("#stopName");
@@ -222,6 +223,7 @@ const storeLocationData = window.STORE_LOCATION_DATA || {
   findStoreLocation: () => null,
   locationLabel: () => "LOCATION NOT MAPPED"
 };
+const productCatalog = window.PRODUCT_CATALOG || [];
 let currentStoreId = storeLocationData.defaultStoreId;
 let activeScanStream = null;
 let activeScanLoop = 0;
@@ -273,6 +275,8 @@ function formatMinutes(total) {
 
 function render() {
   const current = route[activeIndex];
+  currentStopPanel?.setAttribute("data-stop-number", String(activeIndex + 1));
+  stopName?.setAttribute("data-stop-number", String(activeIndex + 1));
   stopMeta.textContent = `Stop ${activeIndex + 1} of ${route.length}`;
   stopName.textContent = current.name;
   stopTime.textContent = `${current.minutes} min`;
@@ -436,6 +440,15 @@ function decodedTextFromResult(result) {
   return result?.getText ? result.getText() : result?.text || "";
 }
 
+function productAssetFor(location) {
+  const catalogMatch = productCatalog.find((item) => item.sku === location?.sku);
+  if (catalogMatch?.imageUrl) return catalogMatch.imageUrl;
+  if (/pepsi/i.test(location?.brand || location?.product || "")) return "assets/products/pepsi-12pk.jpg";
+  if (/gatorade/i.test(location?.brand || location?.product || "")) return "assets/products/gatorade-glacier-freeze-28oz.jpg";
+  if (/mountain dew/i.test(location?.brand || location?.product || "")) return "assets/products/mountain-dew-2l.jpg";
+  return "";
+}
+
 function renderLocationResult(location, query = "") {
   if (!location) {
     locationResult.className = "location-result unmapped";
@@ -449,17 +462,26 @@ function renderLocationResult(location, query = "") {
 
   const label = storeLocationData.locationLabel(location);
   const isMapped = label !== "LOCATION NOT MAPPED";
-  locationResult.className = `location-result ${isMapped ? "mapped" : "unmapped"}`;
+  const productImage = productAssetFor(location);
+  locationResult.className = `location-result featured-product ${isMapped ? "mapped" : "unmapped"}`;
   const mapLink = location.mapTarget
     ? `<a class="secondary-button compact-button result-map-link" href="${location.mapTarget}">Show on map</a>`
     : "";
   locationResult.innerHTML = `
-    <strong>${location.product} - ${location.package}</strong>
-    <span class="result-location">${label}</span>
-    <span>Route stop: ${location.routeStop || "Pending rep review"}</span>
-    <span>Status: ${location.verificationStatus || location.status || "unknown"} / Source: ${location.source || "unknown"}</span>
-    <span>Evidence: ${location.evidence}</span>
-    ${mapLink}
+    ${productImage ? `<img src="${productImage}" alt="${location.product}">` : `<div class="product-placeholder" aria-hidden="true">${location.brand?.slice(0, 1) || "P"}</div>`}
+    <div>
+      <strong>${location.product} - ${location.package}</strong>
+      <span class="result-upc">${(location.upcs || [])[0] ? `UPC ${(location.upcs || [])[0]}` : location.sku}</span>
+      <div class="result-facts">
+        <span><b>Location</b>${isMapped ? location.aisle : "LOCATION NOT MAPPED"}</span>
+        <span><b>Section</b>${location.section || "Verify"}</span>
+        <span><b>Status</b>${location.verificationStatus || location.status || "unknown"}</span>
+        <span><b>Source:</b>${location.source || "unknown"}</span>
+      </div>
+      <span>Route stop: ${location.routeStop || "Pending rep review"}</span>
+      <span class="result-evidence">${location.evidence}</span>
+      ${mapLink}
+    </div>
   `;
   scannerStatus.textContent = isMapped ? "Mapped location found." : "Product found; location still needs mapping.";
 }

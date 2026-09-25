@@ -9,12 +9,20 @@
   <body>
     <div class="app-shell">
       <header class="topbar">
-        <div>
-          <p class="eyebrow">Meijer #57 / 3175 S Rochester Rd</p>
+        <div class="brand-block">
+          <strong class="store-brand">Meijer #57</strong>
+          <span>3175 S Rochester Rd, Rochester Hills</span>
           <h1>Work the store</h1>
+          <p>Follow your route. Keep shelves full.</p>
         </div>
+        <div class="pepsi-mark" aria-label="PepsiCo">PEPSICO</div>
         <div class="top-actions">
-          <button class="primary-button header-scan-button" id="jumpScanButton" type="button">Scan</button>
+          <button class="primary-button header-scan-button" id="jumpScanButton" type="button" aria-label="Scan barcode">
+            <span class="button-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M4 7V4h3M17 4h3v3M20 17v3h-3M7 20H4v-3M8 7v10M11 7v10M14 7v10M17 7v10"/></svg>
+            </span>
+            Scan
+          </button>
           <button class="icon-button" id="resetButton" aria-label="Reset route" title="Reset route">
             <span aria-hidden="true">R</span>
           </button>
@@ -65,7 +73,7 @@
           <div id="soldDisplayList" class="display-list"></div>
         </section>
 
-        <section class="scanner-panel" aria-label="Find product location">
+        <section class="scanner-panel" id="scannerPanel" aria-label="Find product location">
           <div class="section-head">
             <div>
               <p class="eyebrow">Scan or search</p>
@@ -75,22 +83,36 @@
           </div>
           <p>Scan a barcode or type a product, UPC, or Meijer item ID. The app only returns Store #57 locations that are mapped for this merch route.</p>
           <div class="scan-row">
-            <input id="locationLookupInput" inputmode="search" autocomplete="off" placeholder="UPC, item ID, or Pepsi 12pk">
-            <button class="secondary-button compact-button" id="cameraScanButton" type="button">Scan</button>
+            <span class="search-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="m21 21-4.35-4.35M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15Z"/></svg>
+            </span>
+            <input id="locationLookupInput" inputmode="search" autocomplete="off" placeholder="Search product, UPC, or location">
+            <button class="secondary-button compact-button camera-icon-button" id="cameraScanButton" type="button" aria-label="Open camera scanner">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6 10.5 4h3L15 6h3a3 3 0 0 1 3 3v8a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3V9a3 3 0 0 1 3-3h3Z"/><circle cx="12" cy="13" r="4"/></svg>
+            </button>
             <button class="secondary-button compact-button" id="stopCameraButton" type="button" hidden>Stop</button>
           </div>
           <video id="cameraVideo" class="camera-video" playsinline muted hidden></video>
           <p class="scanner-status" id="scannerStatus">Manual lookup ready.</p>
-          <div class="location-result" id="locationResult">
-            <strong>Start with the product in your hand.</strong>
-            <span>Known anchor: Pepsi Original 12-pack belongs in B|4 / Section 4.</span>
+          <div class="location-result mapped featured-product" id="locationResult">
+            <img src="assets/products/pepsi-12pk.jpg" alt="Pepsi Original 12 pack">
+            <div>
+              <strong>Pepsi Original 12pk</strong>
+              <span class="result-upc">UPC 012000809941</span>
+              <div class="result-facts">
+                <span><b>Location</b>B|4</span>
+                <span><b>Section</b>4</span>
+                <span><b>Status</b>Verified</span>
+                <span><b>Source</b>Meijer</span>
+              </div>
+            </div>
           </div>
         </section>
 
         <section class="map-panel" aria-label="Store route map">
           <div class="map-head">
             <div>
-              <h2>Interactive Map</h2>
+              <h2>Store map & route</h2>
               <p>Tap a stop to focus the route. This is a grocery-side working map, not a Meijer blueprint.</p>
             </div>
             <div class="map-actions">
@@ -100,6 +122,7 @@
           </div>
 
           <div class="store-map" id="storeMap">
+            <div class="map-grid-lines" aria-hidden="true"></div>
             <div class="zone front">Front doors / checkout coolers</div>
             <div class="zone deli-zone">Deli / chicken rack</div>
             <div class="zone produce-zone">Fresh / produce side</div>
@@ -154,10 +177,22 @@
       </main>
 
       <nav class="bottom-nav" aria-label="Primary">
-        <button class="nav-item active" data-view="route">Route</button>
-        <button class="nav-item" data-view="scan">Scan</button>
-        <button class="nav-item" data-view="map">Map</button>
-        <button class="nav-item" data-view="verify">Verify</button>
+        <button class="nav-item active" data-view="route">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 20c2.5-4 4-7 4-10a4 4 0 1 0-8 0c0 3 1.5 6 4 10Z"/><circle cx="6" cy="10" r="1.4"/><path d="M17 20c2.5-4 4-7 4-10a4 4 0 1 0-8 0c0 3 1.5 6 4 10Z"/><circle cx="17" cy="10" r="1.4"/><path d="M9 16h5"/></svg>
+          Route
+        </button>
+        <button class="nav-item" data-view="scan">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5v14M10 5v14M14 5v14M17 5v14M4 8V5h3M17 5h3v3M20 16v3h-3M7 19H4v-3"/></svg>
+          Scan
+        </button>
+        <button class="nav-item" data-view="map">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 6 5-2 8 3 5-2v13l-5 2-8-3-5 2V6Z"/><path d="M8 4v13M16 7v13"/></svg>
+          Map
+        </button>
+        <button class="nav-item" data-view="verify">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v16H5Z"/><path d="m8 12 3 3 5-6"/></svg>
+          Verify
+        </button>
       </nav>
     </div>
 
