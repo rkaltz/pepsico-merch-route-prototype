@@ -1209,6 +1209,61 @@ svg {
   background: #fff;
 }
 
+.store-switcher {
+  order: 4;
+  padding: 16px;
+  border: 0;
+  border-radius: 20px;
+  background: #fff;
+}
+
+.store-switcher label {
+  display: grid;
+  gap: 7px;
+  margin-top: 12px;
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.store-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.store-pill {
+  display: grid;
+  gap: 3px;
+  width: 100%;
+  min-height: 0;
+  padding: 12px;
+  border: 1px solid #d5dfeb;
+  border-radius: 16px;
+  color: var(--ink);
+  background: #f8fbff;
+  text-align: left;
+}
+
+.store-pill.active {
+  border-color: rgba(8, 120, 255, 0.58);
+  background: var(--sky);
+  box-shadow: 0 0 0 4px rgba(8, 120, 255, 0.1);
+}
+
+.store-pill strong {
+  font-size: 0.96rem;
+}
+
+.store-pill span,
+.store-pill em {
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-style: normal;
+  line-height: 1.25;
+}
+
 .current-stop {
   order: 1;
   display: grid;
@@ -1635,6 +1690,7 @@ svg {
 
   .app-shell:not(.shelf-shell) .status-strip,
   .app-shell:not(.shelf-shell) .mode-panel,
+  .app-shell:not(.shelf-shell) .store-switcher,
   .app-shell:not(.shelf-shell) .current-stop,
   .app-shell:not(.shelf-shell) .scanner-panel,
   .app-shell:not(.shelf-shell) .map-panel,

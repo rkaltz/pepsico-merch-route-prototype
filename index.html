@@ -4,14 +4,14 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>PepsiCo Route Pilot</title>
-    <link rel="stylesheet" href="styles.css?v=a5bff51-storefix1">
+    <link rel="stylesheet" href="styles.css?v=route-stores1">
   </head>
   <body>
     <div class="app-shell">
       <header class="topbar">
         <div class="brand-block">
-          <strong class="store-brand">Meijer #57</strong>
-          <span>3175 S Rochester Rd, Rochester Hills</span>
+          <strong class="store-brand" id="storeBrandLabel">Meijer #57</strong>
+          <span id="storeAddressLabel">3175 S Rochester Rd, Rochester Hills</span>
           <h1>Work the store</h1>
           <p>Follow your route. Keep shelves full.</p>
         </div>
@@ -53,6 +53,21 @@
           <p id="modeNote">Bulk pull early, work front to back, finish near receiving.</p>
         </section>
 
+        <section class="store-switcher" aria-label="Today's stores">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">Manager loaded</p>
+              <h2>Today's stores</h2>
+            </div>
+            <button class="secondary-button compact-button" id="addStoreButton" type="button">Add store</button>
+          </div>
+          <label>
+            Active store
+            <select id="storeSelect"></select>
+          </label>
+          <div id="routeStoreList" class="store-list"></div>
+        </section>
+
         <section class="manager-note" aria-label="Manager note">
           <div>
             <p class="eyebrow">Manager note</p>
@@ -81,7 +96,7 @@
             </div>
             <span id="selectedStoreLabel">Meijer #57</span>
           </div>
-          <p>Scan a barcode or type a product, UPC, or Meijer item ID. The app only returns Store #57 locations that are mapped for this merch route.</p>
+          <p id="scannerHelpText">Scan a barcode or type a product, UPC, or item ID. The app returns mapped locations for the selected store.</p>
           <div class="scan-row">
             <span class="search-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24"><path d="m21 21-4.35-4.35M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15Z"/></svg>
@@ -306,6 +321,49 @@
         <menu>
           <button class="secondary-button" value="cancel">Cancel</button>
           <button class="primary-button" id="saveDisplayButton" value="default">Save display</button>
+        </menu>
+      </form>
+    </dialog>
+
+    <dialog id="storeDialog">
+      <form method="dialog" class="verify-form">
+        <div class="dialog-head">
+          <div>
+            <p class="eyebrow">Manager route</p>
+            <h2>Add store</h2>
+          </div>
+          <button class="icon-button" value="cancel" aria-label="Close" title="Close">X</button>
+        </div>
+
+        <label>
+          Store name
+          <input id="storeNameInput" placeholder="Kroger Grand Blanc">
+        </label>
+
+        <label>
+          Address
+          <input id="storeAddressInput" placeholder="Store address or city">
+        </label>
+
+        <div class="field-grid">
+          <label>
+            Banner
+            <input id="storeBannerInput" placeholder="Kroger">
+          </label>
+          <label>
+            Route owner
+            <input id="storeRouteOwnerInput" placeholder="Sales rep name">
+          </label>
+        </div>
+
+        <label>
+          Notes
+          <textarea id="storeNotesInput" rows="3" placeholder="Core hit only, no truck today, revisit at end of day"></textarea>
+        </label>
+
+        <menu>
+          <button class="secondary-button" value="cancel">Cancel</button>
+          <button class="primary-button" id="saveStoreButton" value="default">Save store</button>
         </menu>
       </form>
     </dialog>

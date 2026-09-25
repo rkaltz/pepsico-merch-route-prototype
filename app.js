@@ -136,7 +136,7 @@ const route = [
     x: 88,
     y: 34,
     description:
-      "End here near the back wall. Handle overstock, credits, cardboard, and Store #57 notes without crossing the grocery side again.",
+      "End here near the back wall. Handle overstock, credits, cardboard, and selected-store notes without crossing the grocery side again.",
     products: ["Overstock", "Credits", "Cardboard", "Pallet wrap"],
     sequence: [
       "Separate sellable overstock from credits and damages.",
@@ -195,6 +195,19 @@ const cameraVideo = document.querySelector("#cameraVideo");
 const scannerStatus = document.querySelector("#scannerStatus");
 const locationResult = document.querySelector("#locationResult");
 const selectedStoreLabel = document.querySelector("#selectedStoreLabel");
+const scannerHelpText = document.querySelector("#scannerHelpText");
+const storeBrandLabel = document.querySelector("#storeBrandLabel");
+const storeAddressLabel = document.querySelector("#storeAddressLabel");
+const storeSelect = document.querySelector("#storeSelect");
+const routeStoreList = document.querySelector("#routeStoreList");
+const addStoreButton = document.querySelector("#addStoreButton");
+const storeDialog = document.querySelector("#storeDialog");
+const saveStoreButton = document.querySelector("#saveStoreButton");
+const storeNameInput = document.querySelector("#storeNameInput");
+const storeAddressInput = document.querySelector("#storeAddressInput");
+const storeBannerInput = document.querySelector("#storeBannerInput");
+const storeRouteOwnerInput = document.querySelector("#storeRouteOwnerInput");
+const storeNotesInput = document.querySelector("#storeNotesInput");
 const storeLocationData = window.STORE_LOCATION_DATA || {
   stores: [],
   locations: [],
@@ -203,7 +216,19 @@ const storeLocationData = window.STORE_LOCATION_DATA || {
   locationLabel: () => "LOCATION NOT MAPPED"
 };
 const productCatalog = window.PRODUCT_CATALOG || [];
-let currentStoreId = storeLocationData.defaultStoreId;
+function loadSavedRouteStores() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem("routeStores") || "[]");
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+const savedRouteStores = loadSavedRouteStores();
+const baseStores = storeLocationData.stores || [];
+const routeStores = [...baseStores, ...savedRouteStores];
+let currentStoreId = localStorage.getItem("currentStoreId") || storeLocationData.defaultStoreId;
 let activeScanStream = null;
 let activeScanLoop = 0;
 let cameraDetector = null;
@@ -244,6 +269,92 @@ function makeDisplayStop(display) {
 savedDisplays.forEach((display) => {
   route.splice(route.length - 1, 0, makeDisplayStop(display));
 });
+
+function activeStore() {
+  return routeStores.find((store) => store.id === currentStoreId) || routeStores[0] || null;
+}
+
+function storeLocationText(store) {
+  if (!store) return "No store selected";
+  return store.address || store.shortName || store.banner || "Address not loaded";
+}
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function syncStoreData() {
+  storeLocationData.stores = routeStores;
+  localStorage.setItem("routeStores", JSON.stringify(routeStores.filter((store) => store.managerAdded)));
+  localStorage.setItem("currentStoreId", currentStoreId);
+}
+
+function renderStoreSwitcher() {
+  const store = activeStore();
+  if (storeBrandLabel) storeBrandLabel.textContent = store?.name || "Select store";
+  if (storeAddressLabel) storeAddressLabel.textContent = storeLocationText(store);
+  if (selectedStoreLabel) selectedStoreLabel.textContent = store?.name || "Selected store";
+  if (scannerHelpText) scannerHelpText.textContent = `Scan a barcode or type a product, UPC, or item ID. The app returns mapped locations for ${store?.name || "the selected store"}.`;
+
+  if (storeSelect) {
+    storeSelect.innerHTML = routeStores
+      .map((item) => `<option value="${escapeHtml(item.id)}" ${item.id === currentStoreId ? "selected" : ""}>${escapeHtml(item.name)}</option>`)
+      .join("");
+  }
+
+  if (routeStoreList) {
+    routeStoreList.innerHTML = routeStores
+      .map(
+        (item) => `
+          <button class="store-pill ${item.id === currentStoreId ? "active" : ""}" data-store-id="${escapeHtml(item.id)}" type="button">
+            <strong>${escapeHtml(item.name)}</strong>
+            <span>${item.routeOwner ? `${escapeHtml(item.routeOwner)} / ` : ""}${escapeHtml(storeLocationText(item))}</span>
+            ${item.notes ? `<em>${escapeHtml(item.notes)}</em>` : ""}
+          </button>
+        `
+      )
+      .join("");
+  }
+}
+
+function setCurrentStore(storeId) {
+  if (!routeStores.some((store) => store.id === storeId)) return;
+  currentStoreId = storeId;
+  syncStoreData();
+  renderStoreSwitcher();
+  if (locationLookupInput?.value) lookupStoreProduct(locationLookupInput.value);
+  else renderInitialLocationCard();
+}
+
+function storeSlug(value) {
+  return String(value || "store")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "")
+    .slice(0, 42) || "store";
+}
+
+function renderInitialLocationCard() {
+  const store = activeStore();
+  const anchor = storeLocationData.findStoreLocation(currentStoreId, "1200080994");
+  if (anchor) {
+    renderLocationResult(anchor, "1200080994");
+    scannerStatus.textContent = "Manual lookup ready.";
+    return;
+  }
+
+  locationResult.className = "location-result unmapped";
+  locationResult.innerHTML = `
+    <strong>${escapeHtml(store?.name || "Store")} needs location proof</strong>
+    <span>Manager loaded this store for today's route, but permanent shelf locations are not mapped yet. Scan products, verify stops, and add route-owner displays before treating locations as permanent.</span>
+  `;
+  scannerStatus.textContent = "Manual lookup ready.";
+}
 
 function formatMinutes(total) {
   if (total < 60) return `${total}m`;
@@ -429,11 +540,12 @@ function productAssetFor(location) {
 }
 
 function renderLocationResult(location, query = "") {
+  const store = activeStore();
   if (!location) {
     locationResult.className = "location-result unmapped";
     locationResult.innerHTML = `
       <strong>LOCATION NOT MAPPED</strong>
-      <span>No Store #57 shelf location matched "${query || "that scan"}". Add it to pending rep verification before treating it as a route stop.</span>
+      <span>No ${escapeHtml(store?.name || "selected store")} shelf location matched "${escapeHtml(query || "that scan")}". Add it to pending rep verification before treating it as a route stop.</span>
     `;
     scannerStatus.textContent = "No mapped location found.";
     return;
@@ -469,7 +581,7 @@ function lookupStoreProduct(rawQuery) {
   const query = String(rawQuery || "").trim();
   if (!query) {
     renderLocationResult(null, "");
-    scannerStatus.textContent = "Enter a UPC, Meijer item ID, or product name.";
+    scannerStatus.textContent = "Enter a UPC, item ID, or product name.";
     return null;
   }
   const digits = query.replace(/\D/g, "");
@@ -703,6 +815,41 @@ addDisplayButton.addEventListener("click", () => {
   displayDialog.showModal();
 });
 
+addStoreButton?.addEventListener("click", () => {
+  storeNameInput.value = "";
+  storeAddressInput.value = "";
+  storeBannerInput.value = "";
+  storeRouteOwnerInput.value = "";
+  storeNotesInput.value = "";
+  storeDialog.showModal();
+});
+
+saveStoreButton?.addEventListener("click", () => {
+  const name = storeNameInput.value.trim() || "New route store";
+  const id = `${storeSlug(name)}-${Date.now().toString(36)}`;
+  const store = {
+    id,
+    name,
+    banner: storeBannerInput.value.trim() || name.split(" ")[0] || "Store",
+    address: storeAddressInput.value.trim() || "Address needs manager update",
+    routeOwner: storeRouteOwnerInput.value.trim(),
+    notes: storeNotesInput.value.trim(),
+    shortName: name,
+    managerAdded: true
+  };
+  routeStores.push(store);
+  setCurrentStore(id);
+});
+
+storeSelect?.addEventListener("change", () => {
+  setCurrentStore(storeSelect.value);
+});
+
+routeStoreList?.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-store-id]");
+  if (button) setCurrentStore(button.dataset.storeId);
+});
+
 saveDisplayButton.addEventListener("click", () => {
   const department = displayDepartmentInput.value || "Store display";
   const placement = displayPlacementInput.value || "Placement needs verification";
@@ -764,11 +911,6 @@ jumpScanButton?.addEventListener("click", () => {
   locationLookupInput?.focus();
 });
 
-if (selectedStoreLabel) {
-  const selectedStore = storeLocationData.stores.find((store) => store.id === currentStoreId);
-  selectedStoreLabel.textContent = selectedStore?.name || "Selected store";
-}
-
 locationLookupInput?.addEventListener("input", () => {
   lookupStoreProduct(locationLookupInput.value);
 });
@@ -807,8 +949,15 @@ window.MERCH_APP = {
     return currentStoreId;
   },
   set currentStoreId(value) {
-    currentStoreId = value;
+    setCurrentStore(value);
   }
 };
 
+if (!routeStores.some((store) => store.id === currentStoreId) && routeStores[0]) {
+  currentStoreId = routeStores[0].id;
+}
+
+syncStoreData();
+renderStoreSwitcher();
 render();
+renderInitialLocationCard();
