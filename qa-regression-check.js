@@ -176,7 +176,7 @@ function testNoOrderingWorkflow() {
 }
 
 function testRouteMapStillPresent(context) {
-  assert(context.MERCH_APP.route.some((stop) => stop.name === "Deli chicken rack"), "Deli chicken rack route stop is missing");
+  assert(!context.MERCH_APP.route.some((stop) => /chicken/i.test(stop.name)), "Chicken-rack stop should not be in Meijer default route");
   assert(context.MERCH_APP.route.some((stop) => stop.name === "B|4 soda section 4"), "Known-good B|4 section 4 route stop is missing");
 }
 

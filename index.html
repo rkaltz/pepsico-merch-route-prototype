@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>PepsiCo Route Pilot</title>
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="styles.css?v=a5bff51-storefix1">
   </head>
   <body>
     <div class="app-shell">
@@ -58,7 +58,7 @@
             <p class="eyebrow">Manager note</p>
             <h2>Core hit only for new merchandisers</h2>
           </div>
-          <p>Prioritize checkout coolers, lobby/ad displays, the deli chicken rack, and verified B|4 soda sections. Use the map as the base route; add rep-sold displays when the route owner confirms them.</p>
+          <p>Prioritize checkout coolers, lobby/ad displays, rep-added displays, and verified B|4 soda sections. Use the map as the base route; add sold displays when the route owner confirms them.</p>
         </section>
 
         <section class="sold-displays" aria-label="Sold displays">
@@ -139,7 +139,7 @@
             <ol>
               <li><strong>Start front:</strong> fill checkout coolers and queue singles before any aisle work.</li>
               <li><strong>Clear front displays:</strong> lobby, seasonal, and ad stacks while you are already up front.</li>
-              <li><strong>Check deli:</strong> find rotisserie chicken and service the mini-can chicken-rack display if present.</li>
+              <li><strong>Check sold displays:</strong> service any route-owner displays that were added for this store.</li>
               <li><strong>Work B|4 by section:</strong> sections 2 and 4 first, then 6, 8, 12, and 14.</li>
               <li><strong>Do heavy pack work first:</strong> 24 packs/cubes, 12 packs, mini cans, 2 liters, then small formats.</li>
               <li><strong>Finish back:</strong> overstock, credits, cardboard, and route-owner notes near receiving.</li>
@@ -270,17 +270,17 @@
 
         <label>
           Display name
-          <input id="displayNameInput" placeholder="Deli mini-can stack">
+          <input id="displayNameInput" placeholder="Lobby mini-can stack">
         </label>
 
         <div class="field-grid">
           <label>
             Department
-            <input id="displayDepartmentInput" placeholder="Deli">
+            <input id="displayDepartmentInput" placeholder="Lobby">
           </label>
           <label>
             Placement
-            <input id="displayPlacementInput" placeholder="Near chicken rack">
+            <input id="displayPlacementInput" placeholder="Near front entrance">
           </label>
         </div>
 

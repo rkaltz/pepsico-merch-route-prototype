@@ -42,27 +42,6 @@ const route = [
     ]
   },
   {
-    name: "Deli chicken rack",
-    minutes: 8,
-    type: "Secondary display",
-    aisle: "Deli",
-    section: "Rotisserie chicken",
-    priority: "High",
-    verified: false,
-    x: 45,
-    y: 20,
-    description:
-      "Do not miss this. Go to deli, find rotisserie chicken, then locate the 7.5 oz mini-can promo rack.",
-    products: ["7.5 oz mini cans", "6 packs", "Chicken promo"],
-    sequence: [
-      "Walk to deli and find the rotisserie chicken area.",
-      "Look around the chicken rack or warmer; exact placement varies by store.",
-      "Fill 7.5 oz 6-pack mini cans tied to the chicken promo.",
-      "Face the display and remove damaged or loose packs.",
-      "Record the exact placement for this store after verification."
-    ]
-  },
-  {
     name: "B|4 soda section 2",
     minutes: 18,
     type: "Main aisle",
@@ -71,7 +50,7 @@ const route = [
     priority: "High",
     verified: true,
     x: 41,
-    y: 51,
+    y: 52,
     description:
       "First verified B|4 aisle section. The first export found multiple Pepsi-family packages here, including 24 packs.",
     products: ["Pepsi 24 packs", "Pepsi family multipacks", "Large packs"],
@@ -92,7 +71,7 @@ const route = [
     priority: "High",
     verified: true,
     x: 50,
-    y: 52,
+    y: 53,
     description:
       "Known-good validation stop: Pepsi 12 oz 12-pack renders at B|4, Section 4 for Meijer #57.",
     products: ["Pepsi 12 packs", "Pepsi 12 oz cans", "Ad 12 packs"],
@@ -112,7 +91,7 @@ const route = [
     section: "6, 8, 12, 14",
     priority: "High",
     verified: true,
-    x: 61,
+    x: 62,
     y: 58,
     description:
       "Continue down the verified B|4 soda aisle. The first export found Pepsi-family products across sections 6, 8, 12, and 14.",
@@ -133,8 +112,8 @@ const route = [
     section: "1",
     priority: "Medium",
     verified: true,
-    x: 73,
-    y: 47,
+    x: 74,
+    y: 48,
     description:
       "One first-pass Pepsi row appeared outside the main B|4 cluster at G|27, Section 1. Treat this as a check-only stop until product group is confirmed.",
     products: ["Pepsi-family outlier", "Possible display or alternate grocery shelf"],
@@ -155,7 +134,7 @@ const route = [
     priority: "Medium",
     verified: true,
     x: 88,
-    y: 33,
+    y: 34,
     description:
       "End here near the back wall. Handle overstock, credits, cardboard, and Store #57 notes without crossing the grocery side again.",
     products: ["Overstock", "Credits", "Cardboard", "Pallet wrap"],
@@ -344,7 +323,7 @@ function render() {
           `
         )
         .join("")
-    : `<div class="display-item"><strong>No extra sold displays yet</strong><span>Route owner can add lobby, deli, seasonal, or manager-approved displays here.</span></div>`;
+    : `<div class="display-item"><strong>No extra sold displays yet</strong><span>Route owner can add lobby, seasonal, or manager-approved displays here.</span></div>`;
 }
 
 function setActive(index) {
